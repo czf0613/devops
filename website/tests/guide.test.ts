@@ -39,7 +39,7 @@ it('copies each complete command separately without combining lines or adding li
   const wrapper = mount(GuideView, { global: { stubs: { RouterLink: RouterLinkStub } } })
   for (const command of wrapper.findAll('.command')) await command.get('button').trigger('click')
   const origin = window.location.origin
-  const oauthConfig = [
+  const oauthConfigLines = [
     `git config --global credential.${origin}.provider generic`,
     `git config --global credential.${origin}.oauthClientId devops-gcm`,
     `git config --global credential.${origin}.oauthAuthorizeEndpoint /oauth/authorize`,
@@ -48,9 +48,9 @@ it('copies each complete command separately without combining lines or adding li
     `git config --global credential.${origin}.oauthScopes 'git:read git:write'`,
     `git config --global credential.${origin}.oauthDefaultUserName oauth2`,
     `git config --global credential.${origin}.oauthUseClientAuthHeader false`,
-  ].join('\n')
+  ]
   expect(writeText.mock.calls.map(([value]) => value)).toEqual([
-    oauthConfig,
+    ...oauthConfigLines,
     `git config --global credential.${origin}.helper manager`,
     `npm install --global ${window.location.origin}/res/devops-cli/${version}.tgz`,
     `devops auth login --hostname ${window.location.origin} --web`,

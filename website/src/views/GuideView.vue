@@ -12,7 +12,7 @@ const download = `${origin}/res/devops-cli/${version}.tgz`
 const install = `npm install --global ${download}`
 const login = `devops auth login --hostname ${origin} --web`
 const setup = `devops auth setup-git --hostname ${origin} --desktop`
-const oauthConfig = [
+const oauthConfigLines = [
   `git config --global credential.${origin}.provider generic`,
   `git config --global credential.${origin}.oauthClientId devops-gcm`,
   `git config --global credential.${origin}.oauthAuthorizeEndpoint /oauth/authorize`,
@@ -21,7 +21,7 @@ const oauthConfig = [
   `git config --global credential.${origin}.oauthScopes 'git:read git:write'`,
   `git config --global credential.${origin}.oauthDefaultUserName oauth2`,
   `git config --global credential.${origin}.oauthUseClientAuthHeader false`,
-].join('\n')
+]
 const helperConfig = `git config --global credential.${origin}.helper manager`
 const cliExamples = [
   { label: '登录状态', command: 'devops auth status' },
@@ -64,8 +64,13 @@ async function copy(value: string) {
       </figure>
       <ol start="3" class="guide-steps"><li>在终端执行下面的「本站 OAuth 参数」一次，然后使用 Desktop 的 <strong>File → Clone Repository → URL</strong> 粘贴 HTTPS 克隆地址；首次拉取或推送时在打开的网页中登录并点击「允许访问」。</li></ol>
       <h3>本站 OAuth 参数</h3>
-      <p>macOS、Windows 和 Linux 的终端都适用；域名按当前访问地址生成，复制后直接执行：</p>
-      <div class="command"><pre tabindex="0"><code>{{ oauthConfig }}</code></pre><AppButton class="small" variant="secondary" aria-label="复制 Git OAuth 配置命令" @click="copy(oauthConfig)">复制</AppButton></div>
+      <p>macOS、Windows 和 Linux 的终端都适用；域名按当前访问地址生成，逐条复制执行：</p>
+      <div class="command-list config-list">
+        <div v-for="(line, index) in oauthConfigLines" :key="line" class="command config-command">
+          <pre tabindex="0"><code>{{ line }}</code></pre>
+          <AppButton class="small" variant="secondary" :aria-label="`复制 Git OAuth 配置第 ${index + 1} 条`" @click="copy(line)">复制</AppButton>
+        </div>
+      </div>
       <p class="muted">如果客户端弹出用户名 / 密码框，说明这些参数缺失或不完整；DevOps 没有可填的 Git 密码，取消后在终端重新执行一次即可。</p>
       <h3>命令行 Git（可选）</h3>
       <p>终端里 clone / push 还需要 GCM 本身在 PATH 上。macOS 可执行 <code>brew install --cask git-credential-manager</code>，然后把本站 helper 指向 <code>manager</code>：</p>
@@ -124,6 +129,7 @@ async function copy(value: string) {
 .command pre { flex: 1; min-width: 0; max-width: none; margin: 0; padding: 0; border: 0; background: transparent; white-space: pre; overflow-x: auto; line-height: 1.7; }
 .command > .button { flex-shrink: 0; }
 .command-list { display: grid; gap: 8px; }
+.config-command pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .desktop-diagram { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 20px 0; }
 .diagram-title { background: #eff2f7; padding: 12px; font-size: 12px; color: #536078; }
 .window-dots { color: #a8b4c6; padding-right: 12px; }
