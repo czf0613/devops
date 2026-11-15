@@ -1,0 +1,21 @@
+version: 0.1
+log:
+  level: error
+  accesslog:
+    disabled: true
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry/data
+  delete:
+    enabled: true
+  redirect:
+    disable: true
+http:
+  addr: :5000
+  relativeurls: true
+  draintimeout: 60s
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3

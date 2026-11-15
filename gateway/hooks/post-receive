@@ -1,0 +1,15 @@
+#!/bin/sh
+# The authenticated CGI identity is supplied by the internal auth response.
+# Queue local durable receipts; never call APIs or execute repository content.
+set -eu
+case "${REMOTE_USER:-}" in ''|*[!0-9]*) exit 0 ;; esac
+[ "$REMOTE_USER" -gt 0 ] || exit 0
+repository=$(git rev-parse --absolute-git-dir)
+mkdir -p "$repository/devops-events"
+umask 077
+while read -r old new ref; do
+    case "$ref" in refs/heads/*) ;; *) continue ;; esac
+    receipt=$(mktemp "$repository/devops-events/push.XXXXXXXXXXXX")
+    printf '%s\n%s %s %s\n' "$REMOTE_USER" "$old" "$new" "$ref" > "$receipt"
+    mv "$receipt" "$receipt.ready"
+done

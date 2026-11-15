@@ -1,0 +1,108 @@
+name: devops
+
+# Connection settings point at managed cloud services (Aliyun RDS PostgreSQL and
+# Tair Redis); no database container runs in this deployment.
+x-connections: &connections
+  POSTGRES_HOST: ${POSTGRES_HOST:?Set POSTGRES_HOST in .env.deploy}
+  POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+  POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env.deploy}
+  POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.deploy}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.deploy}
+  REDIS_HOST: ${REDIS_HOST:?Set REDIS_HOST in .env.deploy}
+  REDIS_PORT: ${REDIS_PORT:-6379}
+  REDIS_USERNAME: ${REDIS_USERNAME:-default}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.deploy}
+  REDIS_DB: "0"
+  REDIS_SSL: ${REDIS_SSL:-false}
+
+services:
+  # Images are built locally and transferred with docker save/load; nothing is
+  # pulled from a registry. The tags are supplied through .env.deploy.
+  server:
+    image: ${DEVOPS_SERVER_IMAGE:?Set DEVOPS_SERVER_IMAGE in .env.deploy}
+    restart: unless-stopped
+    environment: *connections
+    # The Gateway runs on the host network; only loopback publishing is needed.
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - /dockerdata/devops/git-repos:/mnt/git-repos
+    # Migrations and config initialization are explicit pre-start steps; see scripts/README.md.
+
+  # The worker runs the server image but must not inherit the loopback 8000
+  # publication, so it is declared explicitly instead of extending `server`.
+  worker:
+    image: ${DEVOPS_SERVER_IMAGE:?Set DEVOPS_SERVER_IMAGE in .env.deploy}
+    restart: unless-stopped
+    environment: *connections
+    volumes:
+      - /dockerdata/devops/git-repos:/mnt/git-repos
+    command: ["python", "-m", "devops_server.collaboration_worker"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "devops_server.collaboration_health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
+    stop_grace_period: 120s
+
+  # Only the Gateway and trusted backend containers can reach this service.
+  # No published port and no object-storage redirects around the live ACL.
+  registry:
+    image: registry:3.1.2
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/etc/distribution/start.sh"]
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - /dockerdata/devops/registry:/var/lib/registry
+      - ./registry/config.yml:/etc/distribution/config.yml:ro
+      - ./registry/start.sh:/etc/distribution/start.sh:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:5000/v2/"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 15s
+    stop_grace_period: 70s
+
+  registry-gc:
+    image: ${DEVOPS_SERVER_IMAGE:?Set DEVOPS_SERVER_IMAGE in .env.deploy}
+    restart: unless-stopped
+    user: "0:0"
+    command: ["python", "-m", "devops_server.registry_gc_worker"]
+    environment: *connections
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+    volumes:
+      - /dockerdata/devops/registry:/var/lib/registry
+      - ./registry/config.yml:/etc/distribution/config.yml:ro
+    depends_on:
+      registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "devops_server.registry_gc_health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
+    stop_grace_period: 30s
+
+  gateway:
+    image: ${DEVOPS_GATEWAY_IMAGE:?Set DEVOPS_GATEWAY_IMAGE in .env.deploy}
+    restart: unless-stopped
+    # Host networking keeps the real client address (IPv4 and IPv6) and avoids
+    # Docker's userland proxy. Nginx binds 443 directly on the host.
+    network_mode: host
+    volumes:
+      # Product Git data stays with the other product data; certificates and the
+      # published website live in the shared gateway directory.
+      - /dockerdata/devops/git-repos:/mnt/git-repos
+      - /dockerdata/gateway/cer:/cert:ro
+      - /dockerdata/gateway/website:/usr/share/nginx/html:ro
+    depends_on:
+      server:
+        condition: service_healthy
+    stop_grace_period: 60s

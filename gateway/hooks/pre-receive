@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+# These CGI variables come ONLY from the successful internal auth response.
+# Missing/malformed policy is a deployment error, never permission to push.
+case "${DEVOPS_PROTECT_MAIN:-}:${DEVOPS_PROTECT_PUSH:-}" in
+    0:0|0:1|1:0|1:1) ;;
+    *) echo 'DevOps: repository protection policy unavailable.' >&2; exit 1 ;;
+esac
+zero=0000000000000000000000000000000000000000
+while read -r old new ref; do
+    case "$ref" in
+        refs/devops/*) echo 'DevOps: internal collaboration refs are reserved.' >&2; exit 1 ;;
+    esac
+    if [ "$DEVOPS_PROTECT_MAIN" = 1 ] && [ "$ref" = refs/heads/main ]; then
+        echo 'DevOps: main is protected; direct pushes (including creation/deletion) are disabled.' >&2
+        exit 1
+    fi
+    [ "$DEVOPS_PROTECT_PUSH" = 1 ] || continue
+    if [ "$new" = "$zero" ]; then
+        echo 'DevOps: push protection forbids deleting refs.' >&2
+        exit 1
+    fi
+    [ "$old" != "$zero" ] || continue
+    [ "$old" != "$new" ] || continue
+    case "$ref" in
+        refs/heads/*)
+            if git merge-base --is-ancestor "$old" "$new"; then continue; fi ;;
+    esac
+    echo 'DevOps: push protection forbids non-fast-forward updates and replacing tags.' >&2
+    exit 1
+done
