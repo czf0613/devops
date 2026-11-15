@@ -5,7 +5,8 @@
 - Dockerfile 仅提供 Nginx、Git、fcgiwrap 和进程监督，不安装 Node.js、不构建网站、不 COPY dist。
 - 保留定制主配置的 Brotli 模块加载，不让基础镜像默认站点重新开放额外入口。
 - 网站父目录只读挂载；首页从 current 获取，assets 从共享父目录获取。资源不存在返回 404，不能回退 HTML 假装 JS 加载成功。
-- Gateway 对外仅暴露 TCP / UDP 443；FastAPI、PG、Redis 和 FastCGI 保持内部访问，证书只读挂载。
+- `/assets/` 与 `/res/` 使用一年 `immutable` 缓存（文件名含内容哈希或版本号，旧 release 的 assets 保留）；SPA 入口、健康检查和 API 保持 `no-store`。HTTP 80 只允许 301 到 `https://devops.kevinc.ltd`，不提供内容或证书例外路径。
+- Gateway 对外暴露 TCP 80（仅 301）与 TCP / UDP 443；FastAPI、PG、Redis 和 FastCGI 保持内部访问，证书只读挂载。
 - Git CGI 只允许四种 Smart HTTP 方法 / URI 组合，后端再次校验原始方法、URI、权限和归档状态。LFS 使用独立 API 代理路由，不进入 CGI；禁止 dumb HTTP 或静态读取仓库 config / hooks / objects / lfs。
 - CGI 固定通过镜像内 `git-http-backend.sh` 注入 core.hooksPath；pre-receive 对新旧仓库一致生效。仅使用内部鉴权返回的保护变量，缺失或格式错误必须拒绝。客户端 --force / --no-verify 或同名 Header 不能绕过。
 - 保留 LFS 流式代理、5 GiB 上限及应用端哈希校验；LFS URL 用配置的 ALLOWED_ORIGINS，不因 --no-proxy-headers 返回内部 HTTP 地址。

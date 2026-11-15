@@ -62,6 +62,12 @@ def test_gateway_config_matches_the_new_domain_and_certificates():
     assert "listen [::]:443 ssl;" in nginx
     assert "server 127.0.0.1:8000;" in nginx
     assert "server 127.0.0.1:5000;" in nginx
+    assert "listen 80 default_server;" in nginx
+    assert "listen [::]:80 default_server;" in nginx
+    assert "return 301 https://devops.kevinc.ltd$request_uri;" in nginx
+    immutable = 'add_header Cache-Control "public, max-age=31536000, immutable" always;'
+    assert nginx.count(immutable) == 3
+    assert "add_header_inherit merge;" in nginx
 
 
 def test_runtime_settings_disable_registration_and_wire_smtp():

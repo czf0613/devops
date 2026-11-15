@@ -19,11 +19,12 @@ CLI 使用独立 public client `devops-cli`，权限为 `api:read api:write`，�
 | 部署文件 | `compose.deploy.yaml`，与开发用 `compose.yaml` 分开 |
 | 后端镜像 | `devops.kevinc.ltd/core/devops:latest`，Python 3.14 Alpine + uv.lock |
 | Gateway 镜像 | `devops.kevinc.ltd/core/devops-gateway:latest` |
-| Gateway 基础镜像 | `nginx:1.29-alpine`，保留 Brotli 模块 |
+| Gateway 基础镜像 | `nginx:1.31-alpine`（mainline，含 `--with-http_v3_module` 与 `--with-compat`），Brotli 模块按同版本源码编译 |
 | 网络模式 | Gateway 使用 `network_mode: host`，直接绑定宿主机 TCP / UDP 443（IPv4 + IPv6）；server 与 registry 只发布到 `127.0.0.1` |
 | 客户端地址 | host 网络下 `$remote_addr` 就是真实客户端（含 IPv6），Nginx 仍写入 `X-Forwarded-For` / `X-Real-IP`，后端按配置顺序取第一个有效 IP |
 | 目标架构 | 只构建 `linux/amd64`；镜像用 `docker save` / `docker load` 传输到 x64 服务器，不经过 registry |
-| HTTPS | `devops.kevinc.ltd:443`；TCP 支持 HTTP/1.1 / HTTP/2，UDP 支持 HTTP/3，不开放 80 |
+| HTTPS | `devops.kevinc.ltd:443`；TCP 支持 HTTP/1.1 / HTTP/2，UDP 支持 HTTP/3；80 只做 301 跳转到 HTTPS |
+| 缓存 | `/assets/` 与 `/res/` 使用一年 `immutable`（文件名含内容哈希 / 版本号），SPA 入口、`/gateway-health` 与 API 保持 `no-store` |
 | 证书挂载 | `/dockerdata/gateway/cer` → `/cert:ro`，`kevinc.pem` / `kevinc.key` |
 | Git 挂载 | `/dockerdata/git-repos` → `/mnt/git-repos` |
 | 网站挂载 | `/dockerdata/gateway/website` → `/usr/share/nginx/html:ro`，Nginx root 指向 `current` |

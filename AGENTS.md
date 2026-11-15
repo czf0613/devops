@@ -61,7 +61,7 @@ make website
 9. 权限拒绝既要出现在页面，也必须由 API / Git 鉴权保证。前端隐藏按钮不是安全边界。
 10. 静态网站本机构建，父目录只读挂载给 Gateway。不要把 `current` 软链接本身作为 Docker 挂载源。
 11. 创建仓库只在独占新目录生成 README 初始提交；不回填或重写已有仓库。文档渲染保留 HTML / URL 清洗与仓库 ACL。
-12. server / gateway 只构建 `linux/amd64`（kdevops 是 x64），镜像用 `docker save` 经 SSH 交给服务器 `docker load`，两端核对 image ID；不使用远端 registry，也不在服务器上 `docker pull`。Gateway 使用 host 网络直接绑定宿主机 TCP / UDP 443（IPv4 + IPv6），server / registry 仅发布到 `127.0.0.1`；HTTP/3 需同时维护 Nginx `listen [::]:443 quic`、Alt-Svc 与实际握手验收，保留 TCP 访问。
+12. server / gateway 只构建 `linux/amd64`（kdevops 是 x64），镜像用 `docker save` 经 SSH 交给服务器 `docker load`，两端核对 image ID；不使用远端 registry，也不在服务器上 `docker pull`。Gateway 使用 host 网络直接绑定宿主机 443（IPv4 + IPv6）与 80（仅 301 跳转），server / registry 仅发布到 `127.0.0.1`；HTTP/3 需同时维护 Nginx `listen [::]:443 quic`、Alt-Svc 与实际握手验收，保留 TCP 访问。
 13. main / 推送保护仅拥有者调整，在镜像内 pre-receive 执行；策略不可信或缺失时拒绝。LFS 复用 Git OAuth 和 ACL，按仓库隔离存储，流式校验后原子发布。
 
 ## 按改动选择验证
