@@ -7,8 +7,6 @@ if [ "$#" -gt 1 ]; then
 fi
 case "${1:-}" in
     '')
-        # Standalone Git needs GCM installed on its own executable search path.
-        git credential-manager --version
         desktop=false
         ;;
     --desktop)
@@ -24,9 +22,29 @@ esac
 
 prefix=credential.https://devops.kevinc.ltd
 if [ "$desktop" = false ]; then
+    # Resolve GCM without assuming it is on PATH: GitHub Desktop bundles one at
+    # a fixed path and does not add it to the shell search path.
+    gcm=${GCM_PATH:-}
+    if [ -z "$gcm" ] && command -v git-credential-manager >/dev/null 2>&1; then
+        gcm=git-credential-manager
+    fi
+    if [ -z "$gcm" ]; then
+        bundled='/Applications/GitHub Desktop.app/Contents/Resources/app/git/libexec/git-core/git-credential-manager'
+        [ -x "$bundled" ] && gcm=$bundled
+    fi
+    if [ -z "$gcm" ]; then
+        echo 'GCM not found; install Git Credential Manager or set GCM_PATH.' >&2
+        exit 1
+    fi
+    "$gcm" --version
+    # Git treats a helper value that is not an absolute path as a `git credential-*`
+    # subcommand, and a shell helper must quote a path containing spaces.
+    case "$gcm" in
+        *' '*) gcm="!\"$gcm\"" ;;
+    esac
     # Reset inherited helpers for this host only; rerunning does not duplicate entries.
     git config --global --replace-all "$prefix.helper" ''
-    git config --global --add "$prefix.helper" manager
+    git config --global --add "$prefix.helper" "$gcm"
 fi
 git config --global "$prefix.provider" generic
 git config --global "$prefix.oauthClientId" devops-gcm

@@ -179,13 +179,17 @@ sh gateway/configure-gcm.sh --desktop
 
 ### 命令行 Git
 
-安装独立 GCM，确认 `git credential-manager --version` 可用后执行：
+不带参数执行脚本即可：
 
 ```sh
 sh gateway/configure-gcm.sh
 ```
 
-不带参数时，脚本配置目标域名的 GCM helper 和 OAuth 参数。已有其他域名的凭据配置保持不变。随后执行 `git clone`，地址从仓库详情页复制。
+脚本会先找 PATH 上的 `git-credential-manager`，找不到时回退到 GitHub Desktop 自带的 GCM（`/Applications/GitHub Desktop.app/.../git-credential-manager`），也可以用 `GCM_PATH=/path/to/git-credential-manager` 显式指定。它只重置本站域名的 helper 并写入 OAuth 参数，其他域名的凭据配置保持不变。
+
+注意本机不要同时保留手动写的 `credential.https://devops.kevinc.ltd.provider` 之类残缺配置：只写 `provider = generic` 而没有 OAuth 端点时，GCM 会退化成用户名密码框。重跑脚本会补齐全部键。
+
+随后执行 `git clone`，地址从仓库详情页复制。
 
 两种客户端均通过 GCM 打开 DevOps 页面，登录并点击“允许访问”，回调本机动态端口后继续 clone。已有 DevOps 登录可直接确认。新仓库的 main 已包含 README 初始提交，clone 后即可查看；历史空仓库仍可能显示 empty repository 提示。之后按仓库保护规则提交和推送。
 
