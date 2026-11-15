@@ -12,6 +12,17 @@ const download = `${origin}/res/devops-cli/${version}.tgz`
 const install = `npm install --global ${download}`
 const login = `devops auth login --hostname ${origin} --web`
 const setup = `devops auth setup-git --hostname ${origin} --desktop`
+const oauthConfig = [
+  `git config --global credential.${origin}.provider generic`,
+  `git config --global credential.${origin}.oauthClientId devops-gcm`,
+  `git config --global credential.${origin}.oauthAuthorizeEndpoint /oauth/authorize`,
+  `git config --global credential.${origin}.oauthTokenEndpoint /oauth/token`,
+  `git config --global credential.${origin}.oauthRedirectUri http://127.0.0.1`,
+  `git config --global credential.${origin}.oauthScopes 'git:read git:write'`,
+  `git config --global credential.${origin}.oauthDefaultUserName oauth2`,
+  `git config --global credential.${origin}.oauthUseClientAuthHeader false`,
+].join('\n')
+const helperConfig = `git config --global credential.${origin}.helper manager`
 const cliExamples = [
   { label: '登录状态', command: 'devops auth status' },
   { label: '仓库列表', command: 'devops repo list' },
@@ -36,8 +47,9 @@ async function copy(value: string) {
   <AppNotice v-model="notice" tone="success" placement="floating" />
   <AppNotice v-model="copyError" tone="error" placement="floating" />
   <div class="guide-grid">
-    <AppPanel title="01 · GitHub Desktop 网页授权">
-      <p>开启 Git Credential Manager（GCM）后，GitHub Desktop 可以打开本站网页，让你用邮箱验证码登录并授权 Git 访问。</p>
+    <AppPanel title="01 · Git 网页授权（GCM）">
+      <p>DevOps 的 Git 只支持网页 OAuth 授权，没有用户名和密码可填。Git 客户端需要 GCM（Git Credential Manager）打开本站授权页；下面的配置不依赖 DevOps CLI。</p>
+      <h3>GitHub Desktop</h3>
       <ol class="guide-steps">
         <li>macOS：<strong>GitHub Desktop → Settings / Preferences → Advanced</strong>。Windows：<strong>File → Options → Advanced</strong>。</li>
         <li>勾选 <strong>Use Git Credential Manager</strong>，然后保存。</li>
@@ -50,10 +62,16 @@ async function copy(value: string) {
         </div>
         <figcaption>简易示意图，选项位置可能随 Desktop 版本略有变化。</figcaption>
       </figure>
-      <ol start="3" class="guide-steps"><li>安装右侧 CLI 后，在终端执行一次本站的 GCM 配置：</li></ol>
-      <div class="command"><pre tabindex="0"><code>{{ setup }}</code></pre><AppButton class="small" variant="secondary" aria-label="复制 Git 配置命令" @click="copy(setup)">复制</AppButton></div>
-      <p class="muted">此命令配置当前域名和端口的 OAuth 地址。它保留 Desktop 自带的 Git helper；请先完成上面的开关设置。</p>
-      <ol start="4" class="guide-steps"><li>在仓库页面复制 HTTPS 克隆地址，使用 Desktop 的 <strong>File → Clone Repository → URL</strong>。首次拉取或推送时，在打开的网页中完成登录并点击「允许访问」。</li></ol>
+      <ol start="3" class="guide-steps"><li>在终端执行下面的「本站 OAuth 参数」一次，然后使用 Desktop 的 <strong>File → Clone Repository → URL</strong> 粘贴 HTTPS 克隆地址；首次拉取或推送时在打开的网页中登录并点击「允许访问」。</li></ol>
+      <h3>本站 OAuth 参数</h3>
+      <p>macOS、Windows 和 Linux 的终端都适用；域名按当前访问地址生成，复制后直接执行：</p>
+      <div class="command"><pre tabindex="0"><code>{{ oauthConfig }}</code></pre><AppButton class="small" variant="secondary" aria-label="复制 Git OAuth 配置命令" @click="copy(oauthConfig)">复制</AppButton></div>
+      <p class="muted">如果客户端弹出用户名 / 密码框，说明这些参数缺失或不完整；DevOps 没有可填的 Git 密码，取消后在终端重新执行一次即可。</p>
+      <h3>命令行 Git（可选）</h3>
+      <p>终端里 clone / push 还需要 GCM 本身在 PATH 上。macOS 可执行 <code>brew install --cask git-credential-manager</code>，然后把本站 helper 指向 <code>manager</code>：</p>
+      <div class="command"><pre tabindex="0"><code>{{ helperConfig }}</code></pre><AppButton class="small" variant="secondary" aria-label="复制 Git helper 配置命令" @click="copy(helperConfig)">复制</AppButton></div>
+      <p class="muted">只有 GitHub Desktop 自带的 GCM 时，它不在终端 PATH 上；需要把 helper 指向该可执行文件，路径含空格时写成 <code>!"/Applications/GitHub Desktop.app/…/git-credential-manager"</code>。</p>
+      <p>已安装 DevOps CLI 时，也可以用 <code>{{ setup }}</code> 自动写入上面的 OAuth 参数；它会保留 Desktop 的 helper 设置。</p>
       <p>DevOps 不使用网站密码作为 Git 密码。授权可在「账号安全 → Git / CLI 客户端授权」中撤销。</p>
       <a href="https://github.com/desktop/desktop/blob/release-3.6.6/docs/integrations/gitlab.md" target="_blank" rel="noopener noreferrer">GitHub Desktop 官方 GCM 设置说明 ↗</a>
     </AppPanel>

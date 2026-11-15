@@ -38,8 +38,20 @@ it('copies each complete command separately without combining lines or adding li
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
   const wrapper = mount(GuideView, { global: { stubs: { RouterLink: RouterLinkStub } } })
   for (const command of wrapper.findAll('.command')) await command.get('button').trigger('click')
+  const origin = window.location.origin
+  const oauthConfig = [
+    `git config --global credential.${origin}.provider generic`,
+    `git config --global credential.${origin}.oauthClientId devops-gcm`,
+    `git config --global credential.${origin}.oauthAuthorizeEndpoint /oauth/authorize`,
+    `git config --global credential.${origin}.oauthTokenEndpoint /oauth/token`,
+    `git config --global credential.${origin}.oauthRedirectUri http://127.0.0.1`,
+    `git config --global credential.${origin}.oauthScopes 'git:read git:write'`,
+    `git config --global credential.${origin}.oauthDefaultUserName oauth2`,
+    `git config --global credential.${origin}.oauthUseClientAuthHeader false`,
+  ].join('\n')
   expect(writeText.mock.calls.map(([value]) => value)).toEqual([
-    `devops auth setup-git --hostname ${window.location.origin} --desktop`,
+    oauthConfig,
+    `git config --global credential.${origin}.helper manager`,
     `npm install --global ${window.location.origin}/res/devops-cli/${version}.tgz`,
     `devops auth login --hostname ${window.location.origin} --web`,
     'devops auth status',
