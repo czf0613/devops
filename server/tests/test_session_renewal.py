@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from http.cookies import SimpleCookie
 from threading import Event
@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from devops_server.dependencies import Authenticated
 from devops_server.models import User, UserSession
+from devops_server.security import renew_session_cookies
 
 
 @pytest.fixture
@@ -230,3 +231,42 @@ def test_parallel_requests_only_renew_once(system, browser_session):
         responses = list(pool.map(lambda client: client.get("/api/me"), clients))
     assert all(response.status_code == 200 for response in responses)
     assert sum("set-cookie" in response.headers for response in responses) == 1
+
+
+def test_renewal_cookie_accepts_non_utc_database_timezone(system, browser_session):
+    """Aliyun RDS returns timestamptz in its session timezone (for example +08:00)."""
+    browser = browser_session
+    settings = system.settings
+    request = SimpleNamespace(
+        app=SimpleNamespace(state=SimpleNamespace(settings=settings)),
+        cookies={
+            settings.session_cookie_name: browser.token,
+            settings.csrf_cookie_name: browser.csrf,
+        },
+    )
+    response = Response()
+    managed_zone = timezone(timedelta(hours=8))
+    expires = datetime.now(managed_zone) + timedelta(days=settings.session_days)
+    renew_session_cookies(response, request, expires)
+    cookies = SimpleCookie()
+    for value in response.headers.getlist("set-cookie"):
+        cookies.load(value)
+    for name in (settings.session_cookie_name, settings.csrf_cookie_name):
+        assert cookies[name]["expires"].endswith("GMT")
+
+
+def test_database_connections_are_pinned_to_utc():
+    from sqlalchemy import text
+
+    from devops_server.config import get_connections
+    from devops_server.database import build_engine
+
+    settings = get_connections()
+    if settings.postgres_host not in {"localhost", "127.0.0.1", "::1"}:
+        pytest.fail("Database tests must use local PostgreSQL")
+    engine = build_engine(settings)
+    try:
+        with engine.connect() as connection:
+            assert connection.execute(text("SHOW timezone")).scalar() == "UTC"
+    finally:
+        engine.dispose()

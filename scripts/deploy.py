@@ -275,8 +275,12 @@ def compose(*args, capture=False, input=None):
     )
 
 
-def runtime_settings(settings, registry):
-    """Runtime configuration written to PostgreSQL, not to the environment."""
+def runtime_settings(settings, registry=None):
+    """Runtime configuration written to PostgreSQL, not to the environment.
+
+    ``registry`` is tri-state: True/False set REGISTRY_ENABLED, while None keeps
+    the stored value so a server-only or website-only deploy cannot disable it.
+    """
     origins = [SITE]
     smtp_security = settings.get("SMTP_SSL", "").strip().lower()
     if smtp_security not in {"none", "starttls", "ssl"}:
@@ -291,7 +295,6 @@ def runtime_settings(settings, registry):
         "CSRF_COOKIE_NAME": "devops_csrf",
         "REGISTRATION_ENABLED": False,
         "GIT_OAUTH_ENABLED": True,
-        "REGISTRY_ENABLED": bool(registry),
         "GIT_REPOSITORIES_ROOT": "/mnt/git-repos",
         "SMTP_HOST": settings["SMTP_HOST"],
         "SMTP_PORT": int(settings["SMTP_PORT"]),
@@ -300,6 +303,8 @@ def runtime_settings(settings, registry):
         "SMTP_PASSWORD": settings.get("SMTP_PASSWORD", ""),
         "SMTP_FROM": settings.get("SMTP_FROM") or settings.get("SMTP_USER", ""),
     }
+    if registry is not None:
+        values["REGISTRY_ENABLED"] = bool(registry)
     return values
 
 
@@ -476,7 +481,7 @@ def deploy(components, *, dry_run=False):
 
     if "server" in selected:
         migrate()
-        configure(settings, registry="registry" in selected or "gateway" in selected)
+        configure(settings, registry=True if "registry" in selected else None)
         seed_admin(settings)
     if "server" in selected or "registry" in selected:
         start([name for name in ("server", "registry") if name in selected])

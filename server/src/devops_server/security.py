@@ -95,7 +95,15 @@ def clear_session_cookie(response: Response, settings: Settings) -> None:
 
 
 def renew_session_cookies(response: Response, request: Request, expires_at: datetime) -> None:
-    """Keep token values stable so other tabs can keep using their cached CSRF token."""
+    """Keep token values stable so other tabs can keep using their cached CSRF token.
+
+    Starlette's ``expires=`` requires an exactly-UTC datetime, while a managed
+    PostgreSQL (for example Aliyun RDS) returns timestamptz in its own session
+    timezone. Normalize before writing the cookie.
+    """
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    expires_at = expires_at.astimezone(UTC)
     settings = request.app.state.settings
     token = request.cookies.get(settings.session_cookie_name, "")
     values = {settings.session_cookie_name: token}

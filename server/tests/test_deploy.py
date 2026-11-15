@@ -70,6 +70,7 @@ def test_runtime_settings_disable_registration_and_wire_smtp():
     assert values["REGISTRATION_ENABLED"] is False
     assert values["GIT_OAUTH_ENABLED"] is True
     assert values["REGISTRY_ENABLED"] is True
+    assert "REGISTRY_ENABLED" not in deploy.runtime_settings(SETTINGS)
     assert values["ENVIRONMENT"] == "production"
     assert values["SESSION_COOKIE_NAME"] == "devops_session"
     assert values["SMTP_SECURITY"] == "ssl"

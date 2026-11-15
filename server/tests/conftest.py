@@ -129,7 +129,7 @@ def system(auth_settings, limiter):
     engine = create_engine(
         settings.database_url,
         hide_parameters=True,
-        connect_args={"options": f"-csearch_path={schema}"},
+        connect_args={"options": f"-csearch_path={schema} -c timezone=UTC"},
     )
     config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
     try:
