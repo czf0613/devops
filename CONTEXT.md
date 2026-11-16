@@ -552,4 +552,4 @@ Gateway、官方 Registry、PG / Redis 镜像与原挂载保持不变；六个�
 
 - 新增根目录 `.gitattributes`，语言统计改为白名单：只有 Python、Vue、TypeScript（`*.ts` / `*.mts` / `*.cts`）和 CSS 计入；Markdown、Shell（含 `gateway/hooks/*`）、Makefile、Dockerfile、SQL、Mako、HTML、锁文件与配置等辅助文件均标记 `linguist-detectable=false`。`.ts` 显式指定 `linguist-language=TypeScript`，避免带 Node shebang 的 `cli/src/main.ts` 被 Linguist 计成 JavaScript。
 - `cli/test/*.mjs` 重命名为 `*.ts`，`pnpm test` 改用 Node 内建 type stripping 直接运行；Node 22.12.0 与 22.21.1 均通过 23 项。Linguist 9.3.0 对最终树统计为 Python 57.46%、Vue 21.69%、TypeScript 18.58%、CSS 2.26%，不再出现 JavaScript、Shell 或 Other。
-- 测试代码本轮只做扩展名与运行方式调整，尚未补类型标注，也不在 `tsc` 构建范围内。改动未提交、未 push；GitHub 语言条需推送后才刷新。
+- 测试代码本轮只做扩展名与运行方式调整，尚未补类型标注，也不在 `tsc` 构建范围内。改动已提交为 `e5a2594` 并推送 `master`；About 说明已更新为中文简介，GitHub 语言条需等待后台统计刷新。
