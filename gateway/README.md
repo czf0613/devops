@@ -35,7 +35,7 @@ CLI 使用独立 public client `devops-cli`，权限为 `api:read api:write`，�
 
 `nginx-main.conf` 是主配置，`nginx.conf` 是 http 上下文的站点配置。FastAPI、PG、Redis 不映射宿主端口。内部鉴权 URL 不允许外部直接访问。
 
-仓库目录只由服务端根据自增数据库 ID 生成，用户不能指定存储路径。跨镜像操作使用 UID/GID 101。单次 Git 请求上限 1 GiB，Nginx 会缓冲上传，临时文件目录需预留空间。
+仓库目录只由服务端根据自增数据库 ID 生成，用户不能指定存储路径。跨镜像操作使用 UID/GID 101。单次 Git 请求上限 4 GiB，Nginx 会缓冲上传，临时文件目录需预留空间。
 
 LFS 使用独立流式代理到 FastAPI，单对象最大 5 GiB，不经过 CGI。它的数据在 ID 对应的 Git 目录内，沿用现有持久化挂载。
 

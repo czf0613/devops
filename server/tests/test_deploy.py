@@ -67,6 +67,10 @@ def test_gateway_config_matches_the_new_domain_and_certificates():
     assert "return 301 https://devops.kevinc.ltd$request_uri;" in nginx
     immutable = 'add_header Cache-Control "public, max-age=31536000, immutable" always;'
     assert nginx.count(immutable) == 3
+    # auth_request subrequests must not re-apply the 16m server body limit.
+    assert nginx.count("client_max_body_size 0;") == 2
+    assert "client_max_body_size 4g;" in nginx
+    assert "client_max_body_size 5g;" in nginx
     assert "add_header_inherit merge;" in nginx
 
 
