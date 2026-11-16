@@ -49,6 +49,8 @@ make -C . setup
 
 Gateway 使用 host 网络直接绑定宿主机 443（TCP + UDP，IPv4 + IPv6），所以 `$remote_addr` 就是真实客户端地址；server 与 registry 只发布到 `127.0.0.1`，公网无法直连。宿主机的公网 `/128` IPv6 由 nginx 的 `listen [::]:443` 直接承接，不需要给 Docker bridge 分配前缀。
 
+Compose 为每个服务显式设置 `json-file` + `50m × 3` 日志轮转（每容器上限约 150 MB），不依赖宿主机 `/etc/docker/daemon.json`；宿主 daemon 也配置了相同默认值。
+
 证书固定读取 `/dockerdata/gateway/cer/kevinc.pem` 与 `kevinc.key`；网站 release、共享 assets 和 `/res/` 下载都落在 `/dockerdata/gateway/website`。首次启用 HTTP/3 前，安全组需同时放行 TCP 443 与 UDP 443，并用 `scripts/verify_http3.py` 验证真实 QUIC 握手。
 
 ## 网站独立发布

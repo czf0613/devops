@@ -49,6 +49,8 @@ def test_compose_uses_transferred_images_and_managed_services():
     assert "/dockerdata/gateway/cer:/cert:ro" in COMPOSE
     assert "/dockerdata/gateway/website:/usr/share/nginx/html:ro" in COMPOSE
     assert "network_mode: host" in COMPOSE
+    assert 'max-size: "50m"' in COMPOSE and 'max-file: "3"' in COMPOSE
+    assert COMPOSE.count("logging: *logging") == 5
     assert COMPOSE.count('"127.0.0.1:8000:8000"') == 1
     assert '"127.0.0.1:5000:5000"' in COMPOSE
     assert "443:443" not in COMPOSE

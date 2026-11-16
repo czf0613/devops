@@ -2,6 +2,14 @@ name: devops
 
 # Connection settings point at managed cloud services (Aliyun RDS PostgreSQL and
 # Tair Redis); no database container runs in this deployment.
+# Bound container logs on the deployment itself; the host daemon sets the same
+# defaults, but the Compose file must not depend on a machine-specific file.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "3"
+
 x-connections: &connections
   POSTGRES_HOST: ${POSTGRES_HOST:?Set POSTGRES_HOST in .env.deploy}
   POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -21,6 +29,7 @@ services:
   server:
     image: ${DEVOPS_SERVER_IMAGE:?Set DEVOPS_SERVER_IMAGE in .env.deploy}
     restart: unless-stopped
+    logging: *logging
     environment: *connections
     # The Gateway runs on the host network; only loopback publishing is needed.
     ports:
@@ -34,6 +43,7 @@ services:
   worker:
     image: ${DEVOPS_SERVER_IMAGE:?Set DEVOPS_SERVER_IMAGE in .env.deploy}
     restart: unless-stopped
+    logging: *logging
     environment: *connections
     volumes:
       - /dockerdata/devops/git-repos:/mnt/git-repos
@@ -51,6 +61,7 @@ services:
   registry:
     image: registry:3.1.2
     restart: unless-stopped
+    logging: *logging
     entrypoint: ["/bin/sh", "/etc/distribution/start.sh"]
     ports:
       - "127.0.0.1:5000:5000"
@@ -69,6 +80,7 @@ services:
   registry-gc:
     image: ${DEVOPS_SERVER_IMAGE:?Set DEVOPS_SERVER_IMAGE in .env.deploy}
     restart: unless-stopped
+    logging: *logging
     user: "0:0"
     command: ["python", "-m", "devops_server.registry_gc_worker"]
     environment: *connections
@@ -93,6 +105,7 @@ services:
   gateway:
     image: ${DEVOPS_GATEWAY_IMAGE:?Set DEVOPS_GATEWAY_IMAGE in .env.deploy}
     restart: unless-stopped
+    logging: *logging
     # Host networking keeps the real client address (IPv4 and IPv6) and avoids
     # Docker's userland proxy. Nginx binds 443 directly on the host.
     network_mode: host

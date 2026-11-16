@@ -546,3 +546,4 @@ Gateway、官方 Registry、PG / Redis 镜像与原挂载保持不变；六个�
 - IPv6 验收：域名 AAAA 指向实例 `/128`，公网 IPv6 的 TCP / UDP 443 均可达；HTTP/2 与 HTTP/3 在 v4 / v6 下都返回 200，证书校验通过。注意该 IPv6 是 SLAAC 动态地址，实例重建或地址变化后需要同步 AAAA 记录。
 - Gateway 基础镜像升级到 `nginx:1.31-alpine`（mainline 1.31.8，含 `--with-http_v3_module` 与 `--with-compat`）；Brotli 动态模块改为按基础镜像的实际版本源码编译，避免 ABI 漂移。
 - 缓存与跳转：`/assets/` 与 `/res/` 改为一年 `immutable`（用 `add_header_inherit merge` 保留安全头），SPA 入口、`/gateway-health` 与 API 保持 `no-store`；新增 80 端口 server，固定 301 到 `https://devops.kevinc.ltd`（IPv4 / IPv6，未知 Host 也跳固定域名，避免开放重定向）。
+- 容器日志：`compose.deploy.yaml` 为五个服务显式声明 `json-file`、`max-size=50m`、`max-file=3`（每容器约 150 MB 上限），宿主机 daemon 也配置同样默认值；已重建容器生效。

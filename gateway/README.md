@@ -24,6 +24,7 @@ CLI 使用独立 public client `devops-cli`，权限为 `api:read api:write`，�
 | 客户端地址 | host 网络下 `$remote_addr` 就是真实客户端（含 IPv6），Nginx 仍写入 `X-Forwarded-For` / `X-Real-IP`，后端按配置顺序取第一个有效 IP |
 | 目标架构 | 只构建 `linux/amd64`；镜像用 `docker save` / `docker load` 传输到 x64 服务器，不经过 registry |
 | HTTPS | `devops.kevinc.ltd:443`；TCP 支持 HTTP/1.1 / HTTP/2，UDP 支持 HTTP/3；80 只做 301 跳转到 HTTPS |
+| 日志 | `json-file`，`50m × 3`（每容器最多约 150 MB）；Compose 显式声明，宿主机 daemon 使用同样默认值 |
 | 缓存 | `/assets/` 与 `/res/` 使用一年 `immutable`（文件名含内容哈希 / 版本号），SPA 入口、`/gateway-health` 与 API 保持 `no-store` |
 | 证书挂载 | `/dockerdata/gateway/cer` → `/cert:ro`，`kevinc.pem` / `kevinc.key` |
 | Git 挂载 | `/dockerdata/git-repos` → `/mnt/git-repos` |
