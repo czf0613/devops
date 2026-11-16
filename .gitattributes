@@ -1,0 +1,20 @@
+# GitHub language bar: first-party source only.
+#
+# Python (backend), Vue + TypeScript (website / CLI) and CSS are the only
+# languages that should contribute to the repository statistics. Documentation,
+# shell scripts, Makefile / Dockerfile, SQL, Mako templates, HTML, lockfiles and
+# other config or generated files are auxiliary and must not dilute the chart.
+#
+# Start from an allow-list so new auxiliary file types stay out of the stats;
+# add a rule here when a new first-party source language is introduced.
+* linguist-detectable=false
+
+*.py linguist-detectable=true
+*.pyi linguist-detectable=true
+*.vue linguist-detectable=true
+# Keep shebang entry points such as cli/src/main.ts on the TypeScript side;
+# Linguist's shebang strategy would otherwise report them as JavaScript.
+*.ts linguist-detectable=true linguist-language=TypeScript
+*.mts linguist-detectable=true linguist-language=TypeScript
+*.cts linguist-detectable=true linguist-language=TypeScript
+*.css linguist-detectable=true

@@ -547,3 +547,9 @@ Gateway、官方 Registry、PG / Redis 镜像与原挂载保持不变；六个�
 - Gateway 基础镜像升级到 `nginx:1.31-alpine`（mainline 1.31.8，含 `--with-http_v3_module` 与 `--with-compat`）；Brotli 动态模块改为按基础镜像的实际版本源码编译，避免 ABI 漂移。
 - 缓存与跳转：`/assets/` 与 `/res/` 改为一年 `immutable`（用 `add_header_inherit merge` 保留安全头），SPA 入口、`/gateway-health` 与 API 保持 `no-store`；新增 80 端口 server，固定 301 到 `https://devops.kevinc.ltd`（IPv4 / IPv6，未知 Host 也跳固定域名，避免开放重定向）。
 - 容器日志：`compose.deploy.yaml` 为五个服务显式声明 `json-file`、`max-size=50m`、`max-file=3`（每容器约 150 MB 上限），宿主机 daemon 也配置同样默认值；已重建容器生效。
+
+## 2026-11-16：GitHub 语言统计收敛为四项
+
+- 新增根目录 `.gitattributes`，语言统计改为白名单：只有 Python、Vue、TypeScript（`*.ts` / `*.mts` / `*.cts`）和 CSS 计入；Markdown、Shell（含 `gateway/hooks/*`）、Makefile、Dockerfile、SQL、Mako、HTML、锁文件与配置等辅助文件均标记 `linguist-detectable=false`。`.ts` 显式指定 `linguist-language=TypeScript`，避免带 Node shebang 的 `cli/src/main.ts` 被 Linguist 计成 JavaScript。
+- `cli/test/*.mjs` 重命名为 `*.ts`，`pnpm test` 改用 Node 内建 type stripping 直接运行；Node 22.12.0 与 22.21.1 均通过 23 项。Linguist 9.3.0 对最终树统计为 Python 57.46%、Vue 21.69%、TypeScript 18.58%、CSS 2.26%，不再出现 JavaScript、Shell 或 Other。
+- 测试代码本轮只做扩展名与运行方式调整，尚未补类型标注，也不在 `tsc` 构建范围内。改动未提交、未 push；GitHub 语言条需推送后才刷新。
