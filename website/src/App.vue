@@ -54,7 +54,7 @@ async function logout() {
   <div v-else class="workspace" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
     <aside id="workspace-sidebar" class="sidebar">
       <RouterLink class="brand" to="/" aria-label="DevOps 工作台" :title="sidebarCollapsed ? 'DevOps 工作台' : undefined"
-        ><span class="brand-mark">D</span><span class="brand-name">DevOps</span></RouterLink
+        ><img class="brand-mark" src="/logo.webp" alt="" width="35" height="35" /><span class="brand-name">DevOps</span></RouterLink
       >
       <p class="nav-label">工作空间</p>
       <SidebarNav :roles="auth.user?.roles ?? []" :collapsed="sidebarCollapsed" :user-id="auth.user?.id" />

@@ -46,9 +46,11 @@ pnpm --dir website preview
 | `/notifications` | 本人的站内通知 |
 | `/repositories/:id` | 兼容旧链接，读取后 `replace` 到名称地址 |
 | `/oauth/consent` | 已登录用户确认 Git 客户端授权 |
-| `/users`、`/users/:id`、`/audit`、`/admin/registry` | 全局 admin；菜单和路由守卫同时限制 |
+| `/users`、`/users/:id`、`/audit`、`/admin/registry`、`/admin/system` | 全局 admin；菜单和路由守卫同时限制 |
 | `/status` | 环境就绪状态，需登录；仅保留直接访问，侧栏不展示入口 |
 | 其他路径 | 页面不存在；仍经过登录守卫 |
+
+系统管理中的 `/admin/system` 提供服务器状态页：CPU / 内存 / 磁盘摘要，按文件系统列出的磁盘明细、Git 数据目录占用和主机信息，每 15 秒自动刷新；仅全局 admin 可见，后端继续校验角色。侧栏与登录页使用 `www.kevinc.ltd/res/` 品牌 logo 的本机构建副本，favicon 由 `public/favicon-32x32.png` 与 `public/favicon.webp` 提供，运行时不依赖外部站点。
 
 `router.beforeEach` 加载当前用户并保留未登录时的站内目标。`auth.ts` 保存响应式当前用户，服务端 Cookie 是登录凭据；不向 localStorage 写 Token。`App.vue` 对仓库父页面按 owner / name 设置 key，保持 Code / Settings 切换的公共外壳；子视图按路径重建，query 筛选和 hash 锚点更新不销毁编辑器。
 
@@ -99,7 +101,7 @@ README 使用 [markdown-it](https://markdown-it.github.io/markdown-it/)（关闭
 
 登录设备只显示服务端返回的有效会话，总数与分页不包含已退出、已过期或其他失效记录。退出成功后立即移除对应设备；末页变空时回到最后一个有效页。本人账号安全页与管理员的人员详情页共用此行为。
 
-Git 客户端授权只显示最近 100 条未撤销记录，撤销成功后立即移除；已过期但未撤销的记录保留到期提示。每次成功刷新将授权续期至刷新后 30 天，连续 30 天未刷新或主动撤销后需重新网页授权；面板不展示列表上限、网页登录独立性与自动续期流程说明。到期日期展示后端返回的最新期限。侧栏底部显示当前网页构建的包版本和当年 kevinc.ltd 版权信息，不再展示系统状态入口。网站版本独立于 server 和 CLI；使用指南单独读取 CLI 包版本生成下载地址，见 [版本管理](../README.md#版本管理)。产品展示名、浏览器标题和登录页统一为 `DevOps`；内部 Cookie / localStorage 键不因品牌调整而变更。
+Git 客户端授权只显示最近 100 条未撤销记录，撤销成功后立即移除；已过期但未撤销的记录保留到期提示。每次成功刷新将授权续期至刷新后 30 天，连续 30 天未刷新或主动撤销后需重新网页授权；面板不展示列表上限、网页登录独立性与自动续期流程说明。到期日期展示后端返回的最新期限。侧栏底部显示当前网页构建的包版本和当年 kevinc.ltd 版权信息，不再展示旧的 `/status` 环境入口；管理员的服务器状态位于系统管理。网站版本独立于 server 和 CLI；使用指南单独读取 CLI 包版本生成下载地址，见 [版本管理](../README.md#版本管理)。产品展示名、浏览器标题和登录页统一为 `DevOps`；内部 Cookie / localStorage 键不因品牌调整而变更。
 
 ## 验证
 
@@ -114,6 +116,7 @@ Git 客户端授权只显示最近 100 条未撤销记录，撤销成功后立�
 | `tests/notices-markdown-shell.test.ts` | 提示定时关闭 / 重复反馈、侧栏折叠记忆、Markdown 注入拒绝及相对链接 / 图片 |
 | `tests/repository-activity-authorizations.test.ts` | 仓库条目、提交趋势加载 / 空值 / 错误 / 截断 / 过时响应、未撤销授权与撤销后移除 |
 | `tests/repository-clone-menu.test.ts` | 克隆面板关闭 / 焦点恢复、完整地址复制、反馈清理及复制失败 |
+| `tests/system.test.ts` | 管理员服务器状态指标、数据目录、刷新失败保留旧快照 |
 
 聚焦测试示例：
 

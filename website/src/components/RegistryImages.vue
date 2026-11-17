@@ -66,8 +66,8 @@ async function copy(tag: RegistryTag) {
   const life = lifetime
   message.value = ''; feedbackError.value = ''
   try {
-    await navigator.clipboard.writeText(`docker pull ${props.host}/${props.namespace.name}/${selectedImage.value}@${tag.digest}`)
-    if (life === lifetime) message.value = '已复制按 digest 拉取的命令'
+    await navigator.clipboard.writeText(`docker pull ${props.host}/${props.namespace.name}/${selectedImage.value}:${tag.tag}`)
+    if (life === lifetime) message.value = '已复制按标签拉取的命令'
   } catch { if (life === lifetime) feedbackError.value = '复制失败，请手动复制镜像地址。' }
 }
 function size(value?: number) { return value ? `${(value / 1024 / 1024).toFixed(1)} MiB` : '—' }

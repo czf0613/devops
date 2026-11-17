@@ -70,6 +70,7 @@ watch(admin, (value) => {
         <RouterLink to="/admin/registry" aria-label="Registry 管理" :title="collapsed ? 'Registry 管理' : undefined"><AppIcon v-if="collapsed" name="repo" /><span v-else class="nav-node"></span><span>Registry 管理</span></RouterLink>
         <RouterLink to="/admin/repositories" aria-label="仓库管理" :title="collapsed ? '仓库管理' : undefined" :class="{ 'is-active': route.path.startsWith('/admin/repositories/') }"><AppIcon v-if="collapsed" name="repo" /><span v-else class="nav-node"></span><span>仓库管理</span></RouterLink>
         <RouterLink to="/admin/ci/workers" aria-label="构建机" :title="collapsed ? '构建机' : undefined"><AppIcon v-if="collapsed" name="repo" /><span v-else class="nav-node"></span><span>构建机</span></RouterLink>
+        <RouterLink to="/admin/system" aria-label="服务器状态" :title="collapsed ? '服务器状态' : undefined"><AppIcon v-if="collapsed" name="server" /><span v-else class="nav-node"></span><span>服务器状态</span></RouterLink>
       </div>
     </div>
   </nav>

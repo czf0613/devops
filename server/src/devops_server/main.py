@@ -29,6 +29,7 @@ from devops_server import (
     repositories,
     repository_admin,
     repository_code,
+    system_status,
     users,
 )
 from devops_server.config import ConnectionSettings, Settings, get_connections
@@ -188,6 +189,7 @@ def create_app(
     app.include_router(repository_admin.router)
     app.include_router(registry.router)
     app.include_router(registry_admin.router)
+    app.include_router(system_status.router)
     app.include_router(repository_code.router)
     app.include_router(collaboration_issues.router)
     app.include_router(collaboration_content.router)

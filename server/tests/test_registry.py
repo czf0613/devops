@@ -57,6 +57,27 @@ def check(system, value, method="GET", uri="/v2/example/app/manifests/latest", w
     )
 
 
+@pytest.mark.parametrize("name", ["ai_workspace", "my.team", "a__b", "my--team"])
+def test_namespace_accepts_docker_repository_separators(registry, name):
+    owner = registry.people["owner"][1]
+    response = mutate(owner, "POST", registry.path + "/registry/namespaces", {"name": name})
+    assert response.status_code == 201, response.text
+    assert response.json()["name"] == name
+
+
+@pytest.mark.parametrize("name", ["Team", "team_", "_team", "a..b", "a___b", "a/b", "a b"])
+def test_namespace_rejects_names_outside_docker_reference_grammar(registry, name):
+    owner = registry.people["owner"][1]
+    response = mutate(owner, "POST", registry.path + "/registry/namespaces", {"name": name})
+    assert response.status_code == 422
+
+
+def test_protocol_operations_accept_separators_in_namespace():
+    assert protocol_operations("GET", "/v2/ai_workspace/app/manifests/latest") == [
+        ("ai_workspace/app", "read")
+    ]
+
+
 def test_user_token_is_one_time_hashed_expiring_and_revocable(registry):
     owner = registry.people["owner"][1]
     value = credential(registry)

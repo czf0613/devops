@@ -28,8 +28,11 @@ from devops_server.schemas import Input
 from devops_server.services import audit
 
 router = APIRouter(tags=["registry"])
-NAMESPACE = r"[a-z0-9]+(?:-[a-z0-9]+)*"
+# Docker repository names use path components, not hostnames: periods, single /
+# double underscores and repeated dashes are valid separators in the first
+# component too. The namespace must accept the same grammar as any image path.
 COMPONENT = r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*"
+NAMESPACE = COMPONENT
 IMAGE = rf"{NAMESPACE}/{COMPONENT}(?:/{COMPONENT})*"
 DIGEST = r"sha256:[a-f0-9]{64}"
 REFERENCE = rf"(?:{DIGEST}|[A-Za-z0-9_][A-Za-z0-9_.-]{{0,127}})"

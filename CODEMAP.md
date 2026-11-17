@@ -30,7 +30,7 @@
 
 ## 后端模块
 
-Registry：`registry_models.py` 定义 namespace 归属与令牌摘要，`registry.py` 提供 Cookie 管理 API 及 `/_internal/registry/authorize` 实时鉴权，`registry_client.py` 只访问配置中的内部上游。Gateway 转发 `/v2/` 数据；网站 `RepositoryRegistryView.vue` 管理 repo 绑定与镜像，`RegistryCredentialList.vue` 仅在账号安全提供用户令牌。`registry_admin.py` / `RegistryAdminView.vue` 提供系统级 namespace 归属管理，保持镜像 ACL；`AppNotice` 支持 inline / floating 两种提示位置。迁移为 `0012_registry` → `0013_registry_management`；测试入口 `test_registry.py`、`registry.test.ts`、`verify_registry.py`（由真实 Git Gateway harness 调用）。稳定行为见 [Registry README](registry/README.md)。
+Registry：`registry_models.py` 定义 namespace 归属与令牌摘要，`registry.py` 提供 Cookie 管理 API 及 `/_internal/registry/authorize` 实时鉴权，`registry_client.py` 只访问配置中的内部上游。Gateway 转发 `/v2/` 数据；网站 `RepositoryRegistryView.vue` 管理 repo 绑定与镜像，`RegistryCredentialList.vue` 仅在账号安全提供用户令牌。`registry_admin.py` / `RegistryAdminView.vue` 提供系统级 namespace 归属管理，保持镜像 ACL；`AppNotice` 支持 inline / floating 两种提示位置。相关迁移包括 `0012_registry` / `0013_registry_management` / `0020_registry_namespace_format`；测试入口 `test_registry.py`、`registry.test.ts`、`verify_registry.py`（由真实 Git Gateway harness 调用）。稳定行为见 [Registry README](registry/README.md)。
 
 CLI 入口为 [main.ts](cli/src/main.ts)：Commander 命令树 → [context.ts](cli/src/context.ts) 地址/仓库定位 → [sdk.ts](cli/src/sdk.ts) 原生 API；[output.ts](cli/src/output.ts) 负责 gh 风格 JSON 投影。[ci.ts](cli/src/ci.ts) 注册 workflow / run 命令、处理输入、日志分页和等待；[ci-output.ts](cli/src/ci-output.ts) 投影 run / job / PR checks，[ci-types.ts](cli/src/ci-types.ts) 定义原生契约，[ci-artifacts.ts](cli/src/ci-artifacts.ts) 流式下载并验证产物。[auth.ts](cli/src/auth.ts) 实现 PKCE / device flow / refresh，[storage.ts](cli/src/storage.ts) 管理按 origin + 账号隔离的系统凭据与进程锁。网站使用 [GuideView.vue](website/src/views/GuideView.vue) 和 [OAuthDeviceView.vue](website/src/views/OAuthDeviceView.vue)。发布调用 [deploy_cli.py](scripts/deploy_cli.py)，下载来自 Nginx 的独立静态目录。验证入口：`cli/test/cli.test.ts`、`cli/test/ci.test.ts`、`test_cli_oauth.py`、`test_cli_http.py`、`test_cli_ci_http.py`、`test_cli_deploy.py` 和扩展的 `verify_git_gateway.py`。
 
@@ -56,6 +56,7 @@ CLI 入口为 [main.ts](cli/src/main.ts)：Commander 命令树 → [context.ts](
 | [git_oauth.py](server/src/devops_server/git_oauth.py) | `authorize` / `decide` / `token_exchange` / `revoke_grant` / `git_authorize`，CLI public client、device flow；授权到仓库 ACL |
 | [repository_code.py](server/src/devops_server/repository_code.py) | 分支、12 周提交趋势 `weekly_activity`、Git 对象解析、当前目录 README、受限图片、字面路径与预览边界，不 checkout 或执行文件 |
 | [git_lfs.py](server/src/devops_server/git_lfs.py) | Batch / Basic / verify、OAuth ACL、流式校验、仓库隔离存储、浏览器附件下载 |
+| [system_status.py](server/src/devops_server/system_status.py) | 管理员只读服务器指标：CPU / 内存、按文件系统磁盘占用、Git 数据目录短时缓存扫描、主机与运行时长 |
 
 ## 数据与 API 分组
 
@@ -82,6 +83,7 @@ CLI 入口为 [main.ts](cli/src/main.ts)：Commander 命令树 → [context.ts](
 | `/api/repositories/{id}/activity` | `repository_code.py` | 同一私有 ACL，所有分支唯一提交、UTC 周一分桶、上限 / 超时 |
 | `/git/{owner}/{name}.git/info/lfs/*` | `git_lfs.py` + Nginx | 精确机器写路由免 Cookie CSRF，全部使用 Git OAuth |
 | `/api/repositories/{id}/lfs/{oid}` | `git_lfs.py` | 浏览器 Cookie + 仓库 ACL 的原文件下载 |
+| `/api/admin/system` | `system_status.py` | 全局管理员只读服务器指标；CPU 整机上限 100%，数据目录扫描有缓存与上限 |
 | `/api/health`、`/api/health/ready` | `main.py` | 存活与 PG / Redis 就绪分别检查 |
 
 详细仓库 / OAuth API 表见 [Gateway README](gateway/README.md)，认证参数见 [DevOps README](README.md)，数据库升级见 [迁移 README](server/migrations/README.md)。
@@ -114,6 +116,7 @@ CLI 入口为 [main.ts](cli/src/main.ts)：Commander 命令树 → [context.ts](
 | [SidebarNav.vue](website/src/components/SidebarNav.vue) | 工作台 → 工程仓库；按全局角色展示系统管理 |
 | [UsersView.vue](website/src/views/UsersView.vue)、[UserDetailView.vue](website/src/views/UserDetailView.vue) | 全局人员查询 / 新建 / 编辑、会话与兼容密码清除 |
 | [AuditView.vue](website/src/views/AuditView.vue)、[StatusView.vue](website/src/views/StatusView.vue) | 审计分页、系统就绪显示 |
+| [SystemStatusView.vue](website/src/views/SystemStatusView.vue) | `/admin/system` CPU / 内存 / 磁盘 / 数据目录，15 秒刷新与手动刷新 |
 
 基础组件 `AppButton`、`AppInput`、`AppTextarea`、`AppSelect`、`AppPanel`、`AppBadge`、`AppNotice`、`AppConfirm`、`AppIcon`、`Pager`、`EmailCodeField` 的约定见 [前端 README](website/README.md)。
 
@@ -122,6 +125,10 @@ CLI 入口为 [main.ts](cli/src/main.ts)：Commander 命令树 → [context.ts](
 ### 组件版本
 
 server / website / CLI 分别由 `server/pyproject.toml`、`website/package.json`、`cli/package.json` 定义独立版本。`main.create_app` 通过后端包元数据设置 OpenAPI 版本；CLI `main.ts` 从安装包读取版本；网站 `App.vue` 使用网站包版本显示侧栏，`GuideView.vue` 单独导入 CLI 包版本生成下载地址。`guide.test.ts` 使用不同于网站的 CLI 版本验证下载和复制内容；构建后检查 CLI `--version`、OpenAPI 和 Safari 侧栏。
+
+### 管理员服务器状态
+
+`/admin/system` → `SystemStatusView.vue` → `GET /api/admin/system` → `system_status.server_status` → `psutil` 读取 `/proc` 视角的 CPU、内存、启动时间和磁盘占用；Git 数据目录按 1.5 秒 / 20 万项预算扫描并缓存 60 秒。页面每 15 秒刷新，标签页隐藏时暂停；非 admin 由路由守卫和后端 `Administrator` 同时拒绝。验证入口 `test_system.py`、`system.test.ts`。
 
 ### 邮箱登录和兼容密码
 
@@ -187,6 +194,7 @@ server / website / CLI 分别由 `server/pyproject.toml`、`website/package.json
 | OAuth / Git 网关 | `test_git_oauth.py`、`oauth-consent.test.ts` | 重建镜像后 `verify_git_gateway.py` |
 | Code / 推送保护 / LFS | `test_repository_code.py`、`test_git_lfs.py`、`test_migrations.py` | `repositories.test.ts` 和真实 Git / LFS 客户端集成 |
 | 通用 UI / 导航 / 角色表单 | `components.test.ts`、`repositories.test.ts`、`notices-markdown-shell.test.ts` | 生产构建、按需实际浏览器视觉验证 |
+| 服务器状态 | `test_system.py`、`system.test.ts` | 管理员拒绝路径、CPU 上限、空值 / 刷新失败；管理员页面实际浏览器检查 |
 | 仓库列表 / 提交趋势 / 授权隐藏 | `repository-activity-authorizations.test.ts`、`test_repository_code.py`、`test_git_oauth.py` | 真实 Git 统计边界、列表限额前过滤、Safari 桌面长简介 |
 | 网站发布 | `test_website_deploy.py` | 集成脚本验证 Linux 卷与不重启切换 |
 | 测试服务器发布编排 | `test_deploy.py` | 双架构索引、摘要固定、原生 image ID、旧平台 / UDP 迁移、dry-run；获授权后的真实发布 |

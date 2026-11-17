@@ -81,3 +81,11 @@ it('does not load images from unbound namespaces and offers owners a versioned r
   await wrapper.findAll('button').find(button => button.text() === '重新绑定到原仓库')!.trigger('click'); await flushPromises()
   expect(api).toHaveBeenCalledWith('/repositories/12/registry/namespaces/3', 'PUT', { enabled: true, expected_version: 1 })
 })
+
+it('accepts Docker repository separators in namespace names', () => {
+  const wrapper = mount(RegistryNamespaceCreate, { props: { repositoryId: 12 } })
+  const input = wrapper.get('input')
+  expect(input.attributes('pattern')).toContain('[._]')
+  expect(input.attributes('placeholder')).toContain('ai_workspace')
+  expect(wrapper.text()).toContain('下划线')
+})

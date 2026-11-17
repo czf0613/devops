@@ -51,6 +51,7 @@ make -C . worker
 | `/api/admin/repositories` | 全局管理员的仓库元数据、成员 / 权限 / 移交 / 归档 / 软删除；写操作要求单次邮箱验证 |
 | `/api/admin/registry` | 全局 namespace 管理和手动 GC；写操作要求单次邮箱验证 |
 | `/api/admin/ci/workers` | 全局管理员配置构建机；写操作要求单次邮箱验证 |
+| `/api/admin/system` | 全局管理员只读查看服务器 CPU、内存、磁盘和 Git 数据目录占用；不返回仓库内容 |
 | `/api/repositories/{id}/ci` | 沿用仓库 ACL 的配置、运行、日志和产物；只有拥有者可以授权资源池 |
 | `/api/ci/worker`、`/api/ci/artifacts/{id}` | 独立 worker WSS 与任务级产物传输；不接受 Cookie 回退 |
 | `/oauth/authorize`、`/oauth/token`、`/oauth/revoke` | GCM OAuth 协议；后两者精确 POST 用 code / PKCE 或 Token 鉴权 |
@@ -61,7 +62,7 @@ make -C . worker
 
 仓库无访问权或已删除时返回 404；可见但不能管理通常返回 403。Git 无效凭据返回带 Basic challenge 的 401，有凭据而无权限返回 403。具体参数以 OpenAPI、请求 schema 和 [Gateway 接口表](../gateway/README.md) 为准。
 
-系统管理员通过 `POST /api/auth/email-codes` 申请 `purpose="admin_operation"`，邮箱必须是当前管理员的邮箱。管理写请求提交 `code`，由 `admin_verification.py` 在业务事务内消费；成功后不能复用，不能使用其他用途或其他用户的验证码。复用原有有效期、错误次数、Redis 限流和邮件模板，提交时重查邮箱、账号、会话及 admin 角色，不签发临时特权 Token。列表、搜索、详情等只读请求无需验证码。
+系统管理员的只读服务器状态接口为 `GET /api/admin/system`，返回主机信息、CPU 使用率（整机 100% 上限）、内存、磁盘和 Git 数据目录占用；指标来自运行中的 server 容器视角，不读取仓库内容，也不要求邮箱验证码。系统管理员通过 `POST /api/auth/email-codes` 申请 `purpose="admin_operation"`，邮箱必须是当前管理员的邮箱。管理写请求提交 `code`，由 `admin_verification.py` 在业务事务内消费；成功后不能复用，不能使用其他用途或其他用户的验证码。复用原有有效期、错误次数、Redis 限流和邮件模板，提交时重查邮箱、账号、会话及 admin 角色，不签发临时特权 Token。列表、搜索、详情等只读请求无需验证码。
 
 仓库管理详情仅包含身份、状态和成员字段，不读取代码、Issue 或 PR 内容。所有强制修改使用仓库锁及 `expected_updated_at`，普通成员修改也推进这一版本；冲突返回 409。移交沿用原有语义：原拥有者成为读写仓库管理员，其他成员及 Registry 绑定保留，可再单独移除原拥有者。删除仍为软删除，不删除 Git 文件或历史。审计使用 `repository.admin_*`，记录操作者、对象及必要的前后状态。
 

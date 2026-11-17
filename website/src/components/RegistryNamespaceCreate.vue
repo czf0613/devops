@@ -26,7 +26,7 @@ async function create() {
 <template>
   <form class="namespace-create" @submit.prevent="create">
     <AppNotice v-if="error" tone="error">{{ error }}</AppNotice>
-    <AppInput v-model="name" label="新 namespace" placeholder="例如：my-team" pattern="[a-z0-9]+(-[a-z0-9]+)*" :maxlength="63" hint="小写字母、数字和中间的短横线，全站名称唯一。" required :disabled="disabled || busy">
+    <AppInput v-model="name" label="新 namespace" placeholder="例如：ai_workspace" pattern="[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*" :maxlength="63" hint="小写字母、数字，以及中间的点、下划线或短横线；首尾必须是字母或数字，全站名称唯一。" required :disabled="disabled || busy">
       <template #actions><AppButton type="submit" :busy="busy" :disabled="disabled || !name">创建并绑定</AppButton></template>
     </AppInput>
   </form>

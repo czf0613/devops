@@ -215,7 +215,7 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 
 `0005_password_email_verification` 增加 `legacy_password` 验证码用途，并要求绑定用户 ID；不修改已有账号、密码或会话。存在该用途的记录时，迁移会拒绝回退到旧约束，避免丢弃验证记录。
 
-后续迁移 `0006_git_oauth_pilot` 增加 Git OAuth，`0007_repositories` 增加正式仓库 / 成员并撤销旧联调授权，`0008_repository_lifecycle` 增加归档 / 删除及未删除名称唯一索引，`0009_repository_protection` 增加默认关闭的 main / 推送保护。`0010_collaboration` 增加协作表与编号 / 合并策略，保留旧会话和授权。当前 head 为 `0018_registry_permanent_tokens`，完整升级前提见 [迁移说明](server/migrations/README.md)。
+后续迁移 `0006_git_oauth_pilot` 增加 Git OAuth，`0007_repositories` 增加正式仓库 / 成员并撤销旧联调授权，`0008_repository_lifecycle` 增加归档 / 删除及未删除名称唯一索引，`0009_repository_protection` 增加默认关闭的 main / 推送保护。`0010_collaboration` 增加协作表与编号 / 合并策略，保留旧会话和授权；`0019_ci` 增加 CI 持久化，`0020_registry_namespace_format` 允许 namespace 使用 Docker 仓库路径分隔符。当前 head 为 `0020_registry_namespace_format`，完整升级前提见 [迁移说明](server/migrations/README.md)。
 
 十二张表均使用 `BIGINT GENERATED ALWAYS AS IDENTITY` 主键：
 
@@ -244,10 +244,11 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 | `PUT /api/users/{id}/roles`、`/legacy-password` | 管理员调整普通角色、仅清除兼容密码 |
 | `GET/DELETE /api/users/{id}/sessions` | 管理员查看有效会话与吊销会话 |
 | `GET /api/roles`、`/api/audit-events` | 全局角色与分页审计记录 |
+| `GET /api/admin/system` | 全局管理员只读查看当前服务器的 CPU、内存、磁盘和 Git 数据目录占用 |
 
 ## 前端通用组件
 
-全站固定为深色主题，没有主题切换选项。`website/src/style.css` 集中定义背景、表面、边框、文字、强调色与状态色；组件与页面共享样式，登录/注册页也保持一致。
+全站固定为深色主题，没有主题切换选项。`website/src/style.css` 集中定义背景、表面、边框、文字、强调色与状态色；组件与页面共享样式，登录/注册页也保持一致。侧栏、登录页与浏览器标签使用 `www.kevinc.ltd` 提供的品牌 logo / favicon 本地副本，随网站构建发布，不在运行时加载外部图片。
 
 通用组件位于 `website/src/components`：
 
@@ -260,7 +261,7 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 | `AppConfirm` | 深色确认弹窗，`ask(message, title)` 返回布尔结果；默认聚焦取消，关闭后恢复原焦点 |
 | `AppIcon` | 共用 SVG 图标 |
 | `EmailCodeField` | 登录、注册、换邮箱与兼容密码共用的验证码输入/发送组件；使用服务端重发时间与 429 Retry-After 倒计时 |
-| `SidebarNav` | 可折叠的「工作台 → 工程仓库」和「系统管理」；后者按全局 admin 角色渲染 |
+| `SidebarNav` | 可折叠的「工作台 → 工程仓库」和「系统管理」；后者按全局 admin 角色渲染，包含服务器状态入口 |
 | `SessionList` / `Pager` | 共用设备列表、内部滚动、吊销确认与分页；账号安全页的列表区域不随设备数增长 |
 | `RepositoryMemberForm` | 添加 / 编辑共用，岗位预设加自定义，读写和管理权限分开 |
 | `RepositorySettings` | 拥有者专用移交、归档 / 取消归档、删除，包含名称确认和导航更新 |

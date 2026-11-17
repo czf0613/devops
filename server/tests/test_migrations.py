@@ -627,6 +627,40 @@ def test_permanent_registry_migration_preserves_expiry_and_guards_downgrade(migr
     )
 
 
+def test_registry_namespace_format_accepts_docker_separators_and_guards_downgrade(
+    migrated_database,
+):
+    connection, config, _ = migrated_database
+    user_id = connection.scalar(
+        insert(User)
+        .values(username="namespace", display_name="Test", email="namespace@example.com")
+        .returning(User.id)
+    )
+    repo_id = connection.scalar(
+        insert(Repository).values(owner_id=user_id, name="namespaces").returning(Repository.id)
+    )
+    connection.commit()
+    connection.execute(
+        text(
+            "INSERT INTO registry_namespaces (name, repository_id, enabled) "
+            "VALUES ('ai_workspace', :repo, true)"
+        ),
+        {"repo": repo_id},
+    )
+    connection.commit()
+    assert (
+        connection.scalar(
+            text("SELECT count(*) FROM registry_namespaces WHERE name = 'ai_workspace'")
+        )
+        == 1
+    )
+    with pytest.raises(
+        RuntimeError, match="Cannot downgrade Registry namespaces that use Docker path separators"
+    ):
+        command.downgrade(config, "0019_ci")
+    connection.rollback()
+
+
 def test_ci_downgrade_refuses_worker_history(migrated_database):
     connection, config, _ = migrated_database
     connection.execute(text("INSERT INTO ci_workers (name, pool) VALUES ('fixture', 'default')"))

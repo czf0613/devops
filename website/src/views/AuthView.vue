@@ -46,7 +46,7 @@ async function submit() {
 
 <template>
   <div class="auth-intro">
-    <div class="brand"><span class="brand-mark">D</span> DevOps</div>
+    <div class="brand"><img class="brand-mark" src="/logo.webp" alt="" width="35" height="35" /> DevOps</div>
     <div>
       <p class="eyebrow">YOUR TEAM, CONNECTED</p>
       <h1>从一个账号开始，<br />连接团队的每一天。</h1>

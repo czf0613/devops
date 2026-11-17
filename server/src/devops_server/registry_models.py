@@ -23,7 +23,8 @@ class RegistryNamespace(IdentityRecord, CreatedRecord, UpdatedRecord, Base):
     __tablename__ = "registry_namespaces"
     __table_args__ = (
         CheckConstraint(
-            "name ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(name) <= 63", name="name_format"
+            r"name ~ '^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$' AND length(name) <= 63",
+            name="name_format",
         ),
     )
 

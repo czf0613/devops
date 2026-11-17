@@ -174,6 +174,7 @@ const router = createRouter({
       meta: { title: 'Registry 管理', admin: true },
     },
     { path: '/admin/ci/workers', component: () => import('../views/CIWorkersView.vue'), meta: { title: '构建机', admin: true } },
+    { path: '/admin/system', component: () => import('../views/SystemStatusView.vue'), meta: { title: '服务器状态', admin: true } },
     {
       path: '/',
       name: 'home',

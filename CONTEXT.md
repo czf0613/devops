@@ -1,6 +1,6 @@
 # 项目上下文与交接
 
-更新日期：**2026-10-12（Asia/Shanghai）**。当前阶段为网页登录滑动续期与 Issue #22 状态同步。最新发布与验收见文末记录；本文件保留历史快照，不能用旧段落推断当前运行状态。DevOps 仅以桌面为开发和验收目标，不安排手机适配或窄屏检查。
+更新日期：**2026-11-17（Asia/Shanghai）**。最新阶段、发布与验收见文末记录；本文件保留历史快照，不能用旧段落推断当前运行状态。DevOps 仅以桌面为开发和验收目标，不安排手机适配或窄屏检查。
 
 先读 [README.md](README.md) 获取运行入口，再读 [AGENTS.md](AGENTS.md) 的工作规则和 [CODEMAP.md](CODEMAP.md) 的代码导航。需求跟踪沿用历史 Issue #22（已归档在旧仓库），其正文已在本次整理中从早期设计更新为实际实现与后续待办。这里记录阶段状态，不替代当前代码、数据库迁移或现场检查。
 
@@ -272,7 +272,7 @@ PR 合并规则按允许方式和前置要求分组，新增未保存提示、�
 
 - 用户明确授权实施、测试环境部署、Safari 网页操作和数据写入测试。本次保持原分支 `codex/devops-bootstrap`，源码未 commit、未 Git push；发布镜像包含工作区变更。
 - 新增官方 Registry 3.1.2 私有容器，现有 HTTPS `/v2/` 经 Gateway 子请求鉴权，复用用户与 repo ACL。原生 `docker login` 使用网页创建的专用令牌，无 DevOps CLI 前置登录；只保存令牌摘要。浏览器管理仍用 Cookie + CSRF，Docker 协议不接受 Cookie / Git OAuth / 兼容密码。权限不缓存，数据库变更提交后下一请求即生效。
-- repo 新增 Registry 页签：创建 / 解绑 / 恢复 / 转移 namespace，查看镜像与标签、复制 digest 拉取命令、仅拥有者删除 manifest。一个 repo 支持多个 namespace，namespace 单一归属且解绑保留名称与数据。详情与限制见 [Registry README](registry/README.md)。
+- repo 新增 Registry 页签：创建 / 解绑 / 恢复 / 转移 namespace，查看镜像与标签、复制拉取命令（当时按 digest，2026-11-17 起改为按标签）、仅拥有者删除 manifest。一个 repo 支持多个 namespace，namespace 单一归属且解绑保留名称与数据。详情与限制见 [Registry README](registry/README.md)。
 - 迁移 `0012_registry` 已在本机和测试环境升级；新增 namespace 与凭据表，并为已初始化配置补齐默认项。测试站已启用 REGISTRY_ENABLED。存在 Registry 历史时拒绝降级。
 - `make -C . check` 全部通过：后端 248 项、前端 122 项、CLI 10 项，Ruff check / format、Alembic check、TypeScript / Vite 构建通过。文档链接 / 代码围栏及 `git diff --check` 通过。
 - 本机真实 Docker Gateway 集成通过：新 Registry 的 OCI 上传 / 拉取、目录与标签、mount 双侧授权、解绑 / 恢复、归档只读、删除 digest 和即时撤销；原 Git / LFS / OAuth / HTTP/3 / PR 合并与静态切换回归通过。沿用临时 schema、合成账号和临时容器。
@@ -553,3 +553,15 @@ Gateway、官方 Registry、PG / Redis 镜像与原挂载保持不变；六个�
 - 新增根目录 `.gitattributes`，语言统计改为白名单：只有 Python、Vue、TypeScript（`*.ts` / `*.mts` / `*.cts`）和 CSS 计入；Markdown、Shell（含 `gateway/hooks/*`）、Makefile、Dockerfile、SQL、Mako、HTML、锁文件与配置等辅助文件均标记 `linguist-detectable=false`。`.ts` 显式指定 `linguist-language=TypeScript`，避免带 Node shebang 的 `cli/src/main.ts` 被 Linguist 计成 JavaScript。
 - `cli/test/*.mjs` 重命名为 `*.ts`，`pnpm test` 改用 Node 内建 type stripping 直接运行；Node 22.12.0 与 22.21.1 均通过 23 项。Linguist 9.3.0 对最终树统计为 Python 57.46%、Vue 21.69%、TypeScript 18.58%、CSS 2.26%，不再出现 JavaScript、Shell 或 Other。
 - 测试代码本轮只做扩展名与运行方式调整，尚未补类型标注，也不在 `tsc` 构建范围内。改动已提交为 `e5a2594` 并推送 `master`；About 说明已更新为中文简介，GitHub 语言条需等待后台统计刷新。
+
+## 2026-11-17：镜像拉取命令、品牌图标、服务器状态页与 namespace 字符
+
+- Registry 镜像 / 标签页的“复制拉取命令”改为使用标签而非 digest：`docker pull <host>/<namespace>/<image>:<tag>`，例如 `:latest`；删除仍以整个 digest 为单位，页面继续展示 digest 和平台信息。前端浮层反馈同步改为“已复制按标签拉取的命令”。
+- 侧栏、登录页和浏览器标签使用 `www.kevinc.ltd/res/` 提供的品牌 logo / favicon，并作为 `website/public/logo.webp`、`favicon-32x32.png`、`favicon.webp` 随网站本机构建发布，运行时不依赖外部站点。深色侧栏中的 logo 使用浅色圆角底，保持原品牌配色。
+- 系统管理新增 `/admin/system`“服务器状态”：CPU 使用率（整机 100% 上限）、物理内存、按文件系统磁盘占用、Git 数据目录占用，以及主机名 / 系统 / 运行时长 / Python 版本；每 15 秒自动刷新，标签页隐藏时暂停，支持手动刷新。页面只对全局 admin 显示，后端 `GET /api/admin/system` 继续用 `Administrator` 拒绝非管理员。
+- 指标由 server 容器的 `psutil` / `/proc` 视角读取，`psutil` 已加入 server 依赖与 `uv.lock`。Git 数据目录按 1.5 秒 / 20 万项目录预算扫描并缓存 60 秒，超限显示“至少”；Registry 数据目录未挂载进 server，不单独列出大小，其占用计入系统盘。当前服务器只有一块系统盘，server 容器可看到宿主机的内存、CPU 和 `/` 用量。
+- Registry namespace 的字符校验改为与 Docker 仓库 path-component 一致：小写字母 / 数字，以及中间的点、单 / 双下划线或一个以上短横线；首尾必须是字母或数字，长度上限仍为 63。因此 `ai_workspace`、`my.team`、`a__b`、`my--team` 可用，而大写、首尾符号、双点、三下划线和斜杠仍拒绝。前端创建表单的 HTML pattern / 提示同步，`NAMESPACE` 与 `IMAGE` 共用同一规则，Registry 内部授权路径也接受这些字符。新增迁移 `0020_registry_namespace_format` 替换数据库 check；降级时若已有名称使用新分隔符则拒绝。
+- 验证：后端全量 335 项通过（含 namespace 新字符 / 拒绝用例、迁移升降级保护、`test_system.py` 的管理员拒绝、CPU 上限与磁盘去重），前端全量 Vitest 157 项、`vue-tsc` 类型检查与生产构建通过；本地开发库已升级至 `0020_registry_namespace_format`，`alembic check` 无待生成模型差异。登录页和管理员服务器状态页已用本机 Chrome 桌面截图检查，状态页通过临时 API 替身展示采样数据。
+- 发布：`./deploy.sh server website` 完成。server / worker / registry-gc 使用 `devops.kevinc.ltd/core/devops:fc37c72-dirty-20261117T143140Z`（镜像 ID `sha256:6ac8347143fd9969129068849f2a5e8d4931f05c287d508409c4c00e1cd971ae`）；Gateway 仍为 `devops.kevinc.ltd/core/devops-gateway:870c894-dirty-20261116T135538Z`，Registry 仍为 `registry:3.1.2`。
+- 生产数据库已从 `0019_ci` 升级到 `0020_registry_namespace_format`；实际 check 为 `name ~ '^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$' AND length(name) <= 63`。首次发布因新增迁移文件权限为 0600、容器内 app 用户无法读取而停在迁移前，修正为 0644 后重新构建 / 发布成功；失败尝试没有改变数据库版本。
+- 验收：五个容器 running + healthy；公网 readiness 返回数据库 / Redis connected，IPv4 / IPv6 均通过；网站 release 为 `20261117T143331Z-fc37c72-e061dd`，logo / favicon 与本地 SHA-256 一致；`/admin/system` 返回 SPA，未登录 `/api/admin/system` 返回 401 且 OpenAPI 中为 GET。容器内实际读取 CPU / 内存 / 系统盘 / Git 数据目录指标正常，`NamespaceInput` 实际接受 `ai_workspace`、`my.team`、`a__b`、`my--team`，拒绝大写、双点、三下划线和斜杠；未创建验收 namespace 或修改业务数据。

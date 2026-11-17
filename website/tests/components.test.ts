@@ -178,6 +178,7 @@ describe('role-aware sidebar', () => {
         { path: '/users/:id', component: { template: '<div />' }, meta: { admin: true } },
         { path: '/audit', component: { template: '<div />' }, meta: { admin: true } },
         { path: '/admin/registry', component: { template: '<div />' }, meta: { admin: true } },
+        { path: '/admin/system', component: { template: '<div />' }, meta: { admin: true } },
       ],
     })
     await router.push(path)
@@ -208,8 +209,9 @@ describe('role-aware sidebar', () => {
   it('opens the second-level group on administrator pages and allows collapsing', async () => {
     const { wrapper, router } = await nav(['admin'], '/users')
     expect(wrapper.get('[aria-controls="admin-navigation"]').attributes('aria-expanded')).toBe('true')
-    expect(wrapper.findAll('.nav-children a').length).toBe(5)
+    expect(wrapper.findAll('.nav-children a').length).toBe(6)
     expect(wrapper.get('a[aria-label="构建机"]').attributes('href')).toBe('/admin/ci/workers')
+    expect(wrapper.get('a[aria-label="服务器状态"]').attributes('href')).toBe('/admin/system')
     expect(wrapper.get('a[aria-label="仓库管理"]').attributes('href')).toBe('/admin/repositories')
     expect(wrapper.get('a[aria-label="Registry 管理"]').attributes('href')).toBe('/admin/registry')
     await wrapper.get('[aria-controls="admin-navigation"]').trigger('click')

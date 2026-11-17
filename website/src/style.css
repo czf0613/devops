@@ -106,16 +106,14 @@ small {
   font-weight: 400;
 }
 .brand .brand-mark {
-  display: grid;
-  place-items: center;
+  flex-shrink: 0;
   width: 35px;
   height: 35px;
   margin-right: 3px;
-  color: var(--accent);
-  background: #132d37;
-  border: 1px solid #2c6267;
+  padding: 3px;
+  object-fit: contain;
+  background: #f1eee5;
   border-radius: 10px;
-  font-size: 21px;
   box-shadow: 0 0 24px #39b5ba12;
 }
 .workspace {

@@ -4,7 +4,7 @@ Alembic 入口为 [`../alembic.ini`](../alembic.ini)，模型位于 [`../src/dev
 
 ## 当前迁移链
 
-当前单一 head 为 `0018_registry_permanent_tokens`（2026-10-05 核对）。新增迁移后同步更新本表与根 CONTEXT。
+当前单一 head 为 `0020_registry_namespace_format`（2026-11-17 核对）。新增迁移后同步更新本表与根 CONTEXT。
 
 | revision / 文件 | 升级作用 | 需要注意 |
 |---|---|---|
@@ -26,6 +26,8 @@ Alembic 入口为 [`../alembic.ini`](../alembic.ini)，模型位于 [`../src/dev
 | [0016_registry_namespace_purge](versions/0016_registry_namespace_purge.py) | 记录已删除 namespace 的维护窗口 GC 清理完成时间 | 删除即禁用访问，物理清理成功后才记完成；有删除记录时拒绝丢弃清理状态 |
 | [0017_repository_verification](versions/0017_repository_verification.py) | 仓库生命周期专用邮箱挑战及用户绑定 | 保留历史；存在该用途挑战记录时拒绝降级 |
 | [0018_registry_permanent_tokens](versions/0018_registry_permanent_tokens.py) | Docker 令牌到期时间可空，表示永久有效 | 已有到期时间不变；有永久令牌记录（包括已撤销）时拒绝降级 |
+| [0019_ci](versions/0019_ci_persistent_ci_workers_runs_and_.py) | CI worker、仓库授权、运行 / Job / Attempt、产物表及 PR check 关联 | 保留已有记录；有 worker / 运行历史时拒绝降级 |
+| [0020_registry_namespace_format](versions/0020_registry_namespace_format.py) | namespace 名称允许 Docker 仓库路径分隔符：点、单 / 双下划线、重复短横线 | 只放宽约束，不改已有名称；存在使用新分隔符的名称时拒绝降级 |
 
 所有表使用 BIGINT Identity；邮箱 / Token 大小写语义、部分唯一索引和锁依赖 PostgreSQL。不要用 SQLite 或手改版本号代替实际升级。
 
@@ -84,3 +86,5 @@ uv run --project server pytest server/tests/test_migrations.py -q
 `0017_repository_verification` 增加 `repository_operation` 邮箱挑战用途并要求关联用户 ID，保留已有挑战、会话和仓库数据。存在该用途历史时拒绝降级；不会为了回退清除安全记录。
 
 `0019_ci` 在 `0018_registry_permanent_tokens` 后增加 worker、仓库授权、运行、Job、Attempt、产物表，以及 PR check 的 CI 来源关联。活跃 worker/Job 的 Attempt 有部分唯一索引。已有 CI worker 或运行记录时拒绝降级，避免删除身份/执行历史。日志与产物文件与 Git 持久卷一起备份。
+
+`0020_registry_namespace_format` 将 `registry_namespaces.name` 的检查约束从仅短横线放宽为 Docker path-component 规则：小写字母 / 数字，以及中间的单点、单 / 双下划线或一个以上短横线；首尾必须是字母或数字，长度上限仍为 63。已有名称无需改写；升级后 `ai_workspace` 一类名称可用于 namespace。降级前检查是否存在旧规则不允许的名称，存在则拒绝，避免约束回退时失败或丢失名称。
