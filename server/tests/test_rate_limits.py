@@ -1,10 +1,11 @@
 from concurrent.futures import ThreadPoolExecutor
 
 from conftest import mutate
-from redis.exceptions import ConnectionError, ResponseError
+from redis.exceptions import ConnectionError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from devops_server.config import get_connections
 from devops_server.models import EmailChallenge
 from devops_server.rate_limits import EmailCodeRateLimiter
 
@@ -111,12 +112,11 @@ def test_readiness_includes_redis_failure_without_connection_details(system, mon
     }
 
 
-def test_local_redis_server_rejects_nonzero_database(limiter):
-    # A separate connection avoids changing the fixture's selected database if misconfigured.
+def test_local_redis_uses_the_configured_database(limiter):
+    # REDIS_DB is configurable; the client must honour it instead of hardcoding 0,
+    # and the local server must expose the default 16 databases.
+    settings = get_connections()
+    assert limiter.client.connection_pool.connection_kwargs["db"] == settings.redis_db
     with limiter.client.client() as connection:
-        try:
-            connection.execute_command("SELECT", 1)
-        except ResponseError as error:
-            assert "out of range" in str(error)
-        else:
-            raise AssertionError("Local Redis must be started with --databases 1")
+        connection.execute_command("SELECT", 15)
+        assert connection.execute_command("PING") is True

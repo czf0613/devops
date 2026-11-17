@@ -30,7 +30,8 @@ class ConnectionSettings(BaseSettings):
     redis_port: int = Field(default=56379, ge=1, le=65535)
     redis_username: str = "default"
     redis_password: SecretStr
-    redis_db: int = Field(default=0, ge=0, le=0)
+    # Redis defaults to 16 logical databases; other projects may use the rest.
+    redis_db: int = Field(default=0, ge=0, le=15)
     redis_ssl: bool = False
 
     @property

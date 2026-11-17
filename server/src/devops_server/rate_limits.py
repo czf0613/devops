@@ -41,7 +41,7 @@ def build_redis(settings: ConnectionSettings) -> Redis:
         port=settings.redis_port,
         username=settings.redis_username or None,
         password=settings.redis_password.get_secret_value() or None,
-        db=0,
+        db=settings.redis_db,
         ssl=settings.redis_ssl,
         socket_connect_timeout=2,
         socket_timeout=2,

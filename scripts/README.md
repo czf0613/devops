@@ -27,7 +27,7 @@ make -C . setup
 
 目标是 `ssh kdevops`（Debian 13 x64）上的 `/dockerdata/devops/deploy`。服务器访问不到 Docker Hub，所以所有镜像都在本机按 `linux/amd64` 构建，用 `docker save` → `gzip` → SSH → `docker load` 传输，再按 image ID 双向核对；整个过程不使用远端 registry，也不执行 `docker push` / `docker pull`。
 
-连接信息在本地 `deploy.env`（git 忽略，模板见 `deploy.env.example`）：阿里云 RDS PostgreSQL、Tair（Redis 7.0 兼容，仅 DB 0）和 SMTP。`scripts/deploy.py` 每次把它写成远端 0600 的 `.env.deploy`，并补上 server / gateway 两个镜像标签，所以 `compose.deploy.yaml` 里没有数据库容器，只有 server / worker / registry / registry-gc / gateway。
+连接信息在本地 `deploy.env`（git 忽略，模板见 `deploy.env.example`）：阿里云 RDS PostgreSQL、Tair（Redis 7.0 兼容，默认 DB 0）和 SMTP。`scripts/deploy.py` 每次把它写成远端 0600 的 `.env.deploy`，并补上 server / gateway 两个镜像标签，所以 `compose.deploy.yaml` 里没有数据库容器，只有 server / worker / registry / registry-gc / gateway。
 
 本机需要 uv / Python 3.14、Docker Buildx（支持 `linux/amd64` 模拟构建）、Git、SSH；发布 website 还需要 Node.js / pnpm。
 

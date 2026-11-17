@@ -20,7 +20,7 @@ x-connections: &connections
   REDIS_PORT: ${REDIS_PORT:-6379}
   REDIS_USERNAME: ${REDIS_USERNAME:-default}
   REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.deploy}
-  REDIS_DB: "0"
+  REDIS_DB: ${REDIS_DB:-0}
   REDIS_SSL: ${REDIS_SSL:-false}
 
 services:

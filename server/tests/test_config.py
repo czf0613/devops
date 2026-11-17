@@ -148,11 +148,17 @@ def test_env_changed_during_import_is_preserved(system, tmp_path, monkeypatch):
     assert env.read_text() == "SESSION_DAYS=5\n"
 
 
-def test_only_redis_db_zero_is_accepted():
-    with pytest.raises(ValidationError):
-        ConnectionSettings(
-            _env_file=None, postgres_password="test", redis_password="test", redis_db=1
+def test_redis_db_is_configurable_and_bounded():
+    for db in (0, 1, 15):
+        settings = ConnectionSettings(
+            _env_file=None, postgres_password="test", redis_password="test", redis_db=db
         )
+        assert settings.redis_db == db
+    for db in (-1, 16):
+        with pytest.raises(ValidationError):
+            ConnectionSettings(
+                _env_file=None, postgres_password="test", redis_password="test", redis_db=db
+            )
 
 
 def test_incomplete_config_blocks_startup_and_can_be_repaired(system):

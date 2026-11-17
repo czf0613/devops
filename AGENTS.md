@@ -51,7 +51,7 @@ make website
 ## 不变量
 
 1. Python 3.14 / uv、Vue 3 / TypeScript / pnpm 是现有技术栈；依赖变更同步维护对应锁文件。
-2. PostgreSQL 是账号、会话、配置和仓库元数据的权威来源。Redis 只允许 DB 0，目前负责共享限流，不承载登录会话。
+2. PostgreSQL 是账号、会话、配置和仓库元数据的权威来源。Redis 只承载共享限流，不存登录会话；数据库默认 DB 0，`REDIS_DB` 可配置 0–15，同一实例的其它库可能属于别的项目，不要清库或跨库读写。
 3. `ConnectionSettings` 从 `.env` / 进程环境读连接信息；`Settings` 从 `config` 读业务配置。不要增加业务环境变量回退分支。
 4. `config.is_secret` 只影响敏感值展示，配置实际是原始 JSONB。日志、异常、文档、测试输出不得泄露这些值或用户凭据。
 5. 普通成员可以创建仓库；全局 `admin` 不隐式取得私有仓库内容访问权。强制成员 / 权限 / 所有权 / 生命周期管理仅走独立 `/api/admin/repositories`，每次写操作验证本人邮箱，保留仓库行锁、并发版本和审计。

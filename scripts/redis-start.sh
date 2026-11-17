@@ -6,4 +6,4 @@ umask 077
 printf 'user default on #%s ~* &* +@all\n' "$password_hash" > /tmp/devops-redis.acl
 chown redis:redis /tmp/devops-redis.acl
 exec /usr/local/bin/docker-entrypoint.sh redis-server \
-  --aclfile /tmp/devops-redis.acl --databases 1 --appendonly yes --maxmemory-policy noeviction
+  --aclfile /tmp/devops-redis.acl --databases 16 --appendonly yes --maxmemory-policy noeviction

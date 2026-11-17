@@ -6,7 +6,7 @@
 
 ## 当前交付范围
 
-当前受 Git 管理的业务实现集中在 `仓库根目录`，是独立部署的 DevOps 开发协作平台。运行链路为浏览器或 Git 客户端 → HTTPS Gateway → FastAPI / Git CGI；PostgreSQL 存账号、权限和配置，Redis DB 0 存共享限流状态。
+当前受 Git 管理的业务实现集中在 `仓库根目录`，是独立部署的 DevOps 开发协作平台。运行链路为浏览器或 Git 客户端 → HTTPS Gateway → FastAPI / Git CGI；PostgreSQL 存账号、权限和配置，Redis（默认 DB 0）存共享限流状态。
 
 | 领域 | 已实现 | 当前边界 |
 |---|---|---|

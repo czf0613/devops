@@ -32,7 +32,7 @@ CLI 使用独立 public client `devops-cli`，权限为 `api:read api:write`，�
 | 仓库地址 | `/git/<拥有者用户名>/<仓库名>.git` → `/mnt/git-repos/<数据库ID>.git`，bare，默认 main |
 | Git 运行身份 | 后端 `app` 与 CGI `nginx` 均使用 UID/GID **101**；两个容器共享 Git 挂载 |
 | CGI | `/usr/local/bin/devops-git-http-backend` 包装 Git backend 并固定保护钩子；fcgiwrap 仅监听 `127.0.0.1:9000` |
-| 数据持久化 | PG `/dockerdata/devops/postgres`；Redis `/dockerdata/devops/redis`，仅 DB 0 |
+| 数据持久化 | PG `/dockerdata/devops/postgres`；Redis `/dockerdata/devops/redis`，默认 DB 0（`REDIS_DB` 可配置） |
 
 `nginx-main.conf` 是主配置，`nginx.conf` 是 http 上下文的站点配置。FastAPI、PG、Redis 不映射宿主端口。内部鉴权 URL 不允许外部直接访问。
 
