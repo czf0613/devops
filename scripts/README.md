@@ -38,6 +38,8 @@ make -C . setup
 ./deploy.sh all --dry-run       # 只看计划，不构建也不连服务器
 ```
 
+实际发布默认要求 Git 工作区干净。`scripts/deploy.py` 在构建或连接服务器前检查 `git status --porcelain`；存在未提交 / 未跟踪更改时直接拒绝，避免生成带 `-dirty` 的不可追溯镜像。确需从当前工作区发布时显式加 `--allow-dirty`，镜像标签会保留 `-dirty` 标记。`--dry-run` 不执行该检查，也不会构建。
+
 `deploy.sh` 只负责定位目录并转发参数，逻辑在 `scripts/deploy.py`：
 
 1. 本机按 `linux/amd64` 构建 server / gateway，标签为 `devops.kevinc.ltd/core/devops[-gateway]:<短提交>[-dirty]-<UTC时间>`；同时按 digest 拉取官方 `registry:3.1.2` 再打成本地标签，供 registry 服务使用。

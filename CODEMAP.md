@@ -158,7 +158,7 @@ server / website / CLI 分别由 `server/pyproject.toml`、`website/package.json
 
 ### 测试服务器组件部署
 
-`deploy.sh` / `Makefile deploy` → `scripts/deploy.py`：选择 server / gateway / website，Buildx 构建并推送选中镜像的 arm64 / amd64 索引 → `published_image_ids` 读取各架构 manifest / config ID → SSH 内 `native_platform` 选择服务器架构 → image 固定索引摘要、迁移已知旧 platform / Gateway UDP 443 → pull 并核对该架构镜像 ID / 运行容器 manifest 描述符 → 备份 Compose / 检查迁移 → up --no-deps --wait → 实际运行镜像和公网 readiness。`--migrate` 才备份数据库并升级；website 调用现有静态发布器，`--dry-run` 不执行发布。
+`deploy.sh` / `Makefile deploy` → `scripts/deploy.py`：选择组件后先检查工作区（脏树默认拒绝，`--allow-dirty` 才继续）→ 本机 Buildx 构建选中的 server / gateway `linux/amd64` 镜像 → `docker save | gzip | ssh docker load` 并核对两端 image ID → 写入 `.env.deploy`、Compose 与 registry 配置 → server 执行 `alembic upgrade head`、config init/set 与 admin seed → `up --wait` → 发布网站并核验公网 readiness / release 标记。`--allow-dirty` 保留 `-dirty` 标签；`--dry-run` 不构建、不连接服务器。
 
 ## 网关、部署与脚本入口
 

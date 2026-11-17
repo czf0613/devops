@@ -133,6 +133,26 @@ def test_dry_run_has_no_side_effects(monkeypatch, capsys):
     assert "docker save" in output and "alembic upgrade head" in output
 
 
+def test_dirty_worktree_is_rejected_before_build(monkeypatch):
+    monkeypatch.setattr(deploy, "read_env", lambda path: dict(SETTINGS))
+    monkeypatch.setattr(deploy, "worktree_changes", lambda: " M server/src/devops_server/main.py")
+    calls = []
+    monkeypatch.setattr(deploy, "run", lambda *args, **kwargs: calls.append(args))
+    with pytest.raises(deploy.DeploymentError, match="--allow-dirty"):
+        deploy.deploy(["server"])
+    assert calls == []
+
+
+def test_clean_worktree_passes_and_dirty_override_keeps_the_marker(monkeypatch):
+    monkeypatch.setattr(deploy, "worktree_changes", lambda: "")
+    assert deploy.require_clean_worktree() == ""
+    monkeypatch.setattr(deploy, "worktree_changes", lambda: " M server/src/devops_server/main.py")
+    assert deploy.require_clean_worktree(allow_dirty=True) == " M server/src/devops_server/main.py"
+    monkeypatch.setattr(deploy, "run", lambda *args, **kwargs: "abc123")
+    assert deploy.release_name(" M server/src/devops_server/main.py").startswith("abc123-dirty-")
+    assert deploy.release_name("").split("-")[0] == "abc123"
+
+
 def test_transfer_verification_rejects_a_mismatched_remote_image(monkeypatch):
     entry = {"server": {"tag": "devops.kevinc.ltd/core/devops:test", "id": "sha256:" + "a" * 64}}
 

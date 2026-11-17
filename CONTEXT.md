@@ -565,3 +565,9 @@ Gateway、官方 Registry、PG / Redis 镜像与原挂载保持不变；六个�
 - 发布：`./deploy.sh server website` 完成。server / worker / registry-gc 使用 `devops.kevinc.ltd/core/devops:fc37c72-dirty-20261117T143140Z`（镜像 ID `sha256:6ac8347143fd9969129068849f2a5e8d4931f05c287d508409c4c00e1cd971ae`）；Gateway 仍为 `devops.kevinc.ltd/core/devops-gateway:870c894-dirty-20261116T135538Z`，Registry 仍为 `registry:3.1.2`。
 - 生产数据库已从 `0019_ci` 升级到 `0020_registry_namespace_format`；实际 check 为 `name ~ '^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$' AND length(name) <= 63`。首次发布因新增迁移文件权限为 0600、容器内 app 用户无法读取而停在迁移前，修正为 0644 后重新构建 / 发布成功；失败尝试没有改变数据库版本。
 - 验收：五个容器 running + healthy；公网 readiness 返回数据库 / Redis connected，IPv4 / IPv6 均通过；网站 release 为 `20261117T143331Z-fc37c72-e061dd`，logo / favicon 与本地 SHA-256 一致；`/admin/system` 返回 SPA，未登录 `/api/admin/system` 返回 401 且 OpenAPI 中为 GET。容器内实际读取 CPU / 内存 / 系统盘 / Git 数据目录指标正常，`NamespaceInput` 实际接受 `ai_workspace`、`my.team`、`a__b`、`my--team`，拒绝大写、双点、三下划线和斜杠；未创建验收 namespace 或修改业务数据。
+
+## 2026-11-17：部署前拒绝未提交工作区
+
+- `scripts/deploy.py` 现在在构建镜像或连接服务器前执行 `git status --porcelain`；有未提交、已暂存或未跟踪更改时直接拒绝发布，并列出前 12 项。这样不会再因为忘记提交而生成带 `-dirty` 的镜像标签，也避免发布后才补提交再重发。
+- 需要从当前工作区临时 / 紧急发布时显式传入 `--allow-dirty`；此时镜像标签继续保留 `-dirty`，网站仍调用独立静态发布器。`--dry-run` 不受影响，也不构建或连接服务器。
+- 验证：`test_deploy.py` 15 项通过，覆盖脏树在构建前拒绝、干净工作区放行、`--allow-dirty` 保留标记；Ruff check / format 通过。本改进只修改本地发布脚本和文档，不改变线上运行镜像，无需重新部署。

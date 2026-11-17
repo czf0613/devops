@@ -4,7 +4,7 @@
 
 HTTPS / Git Gateway 的部署与 OAuth 登录见 [gateway/README.md](gateway/README.md)。原生 Docker 登录、repo namespace 绑定、镜像管理及人工维护窗口内的管理员 GC 见 [Registry README](registry/README.md)。本地开发继续使用下面的流程；部署使用独立的 `compose.deploy.yaml`。
 
-部署目标为 `ssh kdevops`：`./deploy.sh` 选择 `server`、`website`、`gateway`、`registry`、`cli` 或 `all`，支持组合与 `--dry-run`。服务器访问不到 Docker Hub，镜像在本机按 `linux/amd64` 构建后用 `docker save` / `docker load` 经 SSH 传输并核对 image ID，不使用远端 registry，也不执行 `docker push` / `docker pull`。连接信息来自本地 `deploy.env`（RDS、Tair、SMTP），网站发布到 `/dockerdata/gateway/website`，证书读取 `/dockerdata/gateway/cer`；Gateway 固定 `devops.kevinc.ltd`，使用 host 网络直接绑定 IPv4 / IPv6 的 TCP 443 与 UDP 443，同时提供 HTTP/2 与 HTTP/3。详见 [scripts/README.md](scripts/README.md#kdevops-部署)。
+部署目标为 `ssh kdevops`：`./deploy.sh` 选择 `server`、`website`、`gateway`、`registry`、`cli` 或 `all`，支持组合与 `--dry-run`；实际发布默认拒绝未提交工作区，紧急覆盖需显式使用 `--allow-dirty`。服务器访问不到 Docker Hub，镜像在本机按 `linux/amd64` 构建后用 `docker save` / `docker load` 经 SSH 传输并核对 image ID，不使用远端 registry，也不执行 `docker push` / `docker pull`。连接信息来自本地 `deploy.env`（RDS、Tair、SMTP），网站发布到 `/dockerdata/gateway/website`，证书读取 `/dockerdata/gateway/cer`；Gateway 固定 `devops.kevinc.ltd`，使用 host 网络直接绑定 IPv4 / IPv6 的 TCP 443 与 UDP 443，同时提供 HTTP/2 与 HTTP/3。详见 [scripts/README.md](scripts/README.md#kdevops-部署)。
 
 ## 阅读入口与能力边界
 

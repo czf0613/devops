@@ -117,11 +117,32 @@ def read_env(path):
     return values
 
 
-def release_name():
+def worktree_changes():
+    return run("git", "-C", str(DEVOPS), "status", "--porcelain", capture=True).strip(
+        "\n"
+    )
+
+
+def require_clean_worktree(*, allow_dirty=False):
+    changes = worktree_changes()
+    if not changes or allow_dirty:
+        return changes
+    lines = changes.splitlines()
+    preview = "\n".join(lines[:12])
+    if len(lines) > 12:
+        preview += f"\n… 另有 {len(lines) - 12} 项"
+    raise DeploymentError(
+        "Git 工作区有未提交更改，已在构建前拒绝发布。\n"
+        f"{preview}\n"
+        "请先提交（并推送）后重试；如确需从当前工作区发布，显式使用 --allow-dirty。"
+    )
+
+
+def release_name(changes=None):
     revision = run(
         "git", "-C", str(DEVOPS), "rev-parse", "--short", "HEAD", capture=True
     ).strip()
-    dirty = run("git", "-C", str(DEVOPS), "status", "--porcelain", capture=True).strip()
+    dirty = worktree_changes() if changes is None else changes
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return f"{revision}{'-dirty' if dirty else ''}-{stamp}"
 
@@ -399,7 +420,7 @@ def verify():
     )
 
 
-def deploy(components, *, dry_run=False):
+def deploy(components, *, dry_run=False, allow_dirty=False):
     selected = [
         name for name in COMPONENTS if name in components or "all" in components
     ]
@@ -450,9 +471,15 @@ def deploy(components, *, dry_run=False):
         print("  verify: server-side HTTPS readiness and website release marker")
         return
 
+    changes = require_clean_worktree(allow_dirty=allow_dirty)
+    if changes:
+        print(
+            "Warning: deploying from an uncommitted worktree; image tags keep the -dirty marker.",
+            flush=True,
+        )
     images = {}
     if images_wanted:
-        release = release_name()
+        release = release_name(changes)
         built = build_images(
             release, [name for name in ("server", "gateway") if name in selected]
         )
@@ -510,9 +537,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("components", nargs="+", choices=(*COMPONENTS, "all"))
     parser.add_argument("--dry-run", action="store_true", help="Show the plan only")
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Deploy from an uncommitted worktree; image tags keep the -dirty marker",
+    )
     args = parser.parse_args()
     try:
-        deploy(args.components, dry_run=args.dry_run)
+        deploy(args.components, dry_run=args.dry_run, allow_dirty=args.allow_dirty)
     except (
         DeploymentError,
         subprocess.CalledProcessError,
