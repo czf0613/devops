@@ -571,3 +571,12 @@ Gateway、官方 Registry、PG / Redis 镜像与原挂载保持不变；六个�
 - `scripts/deploy.py` 现在在构建镜像或连接服务器前执行 `git status --porcelain`；有未提交、已暂存或未跟踪更改时直接拒绝发布，并列出前 12 项。这样不会再因为忘记提交而生成带 `-dirty` 的镜像标签，也避免发布后才补提交再重发。
 - 需要从当前工作区临时 / 紧急发布时显式传入 `--allow-dirty`；此时镜像标签继续保留 `-dirty`，网站仍调用独立静态发布器。`--dry-run` 不受影响，也不构建或连接服务器。
 - 验证：`test_deploy.py` 15 项通过，覆盖脏树在构建前拒绝、干净工作区放行、`--allow-dirty` 保留标记；Ruff check / format 通过。本改进只修改本地发布脚本和文档，不改变线上运行镜像，无需重新部署。
+
+## 2026-11-19：Gateway 升级 nginx 1.31.9（nginx2root）
+
+- 2026-11-18 披露的 nginx2root 影响 nginx 1.9.5–1.31.8，包含 CVE-2026-123007（HTTP/2 RCE）、CVE-2026-123634、CVE-2026-123633、CVE-2026-121810、CVE-2026-113425；F5 修复版本为 1.31.9 / 1.30.7。原 Gateway 运行 `nginx/1.31.8`，属于受影响版本。
+- `gateway/Dockerfile` 两个阶段固定为 `nginx:1.31.9-alpine`，运行时构建检查 `nginx -v` 必须精确为 1.31.9；Brotli 动态模块继续按同一 nginx 源码版本编译并通过加载测试。新增部署回归测试确保基础镜像不会被标签漂移回旧版本。
+- 发布 Gateway 镜像 `devops.kevinc.ltd/core/devops-gateway:60e9a9b-20261118T200722Z`（镜像 ID `sha256:1aef947a4b60eaeb16a643162ba215d4338c80f309e23ddf670ac257af0b6f35`）。server / worker / registry-gc / registry / 网站 release 均未更新；Gateway 之外的服务仍是上一快照。
+- 验收：现场 `nginx -v` 为 `nginx/1.31.9`，`nginx -V` 含 `--with-http_v2_module`、`--with-http_v3_module`、`--with-compat`；五个容器 running + healthy；公网 readiness / release 正常，TLS ALPN 为 `h2`，Brotli 响应正常；`make http3-check` 的首页和 `/api/health/ready` 均通过 QUIC + 证书校验。完整本地 `verify_git_gateway.py` 通过 Git / LFS / HTTP/3 / Registry / Registry GC / CI / PR 合并与内部路径防护验收。
+- 同一轮修复了集成脚本的陈旧耦合：`build_engine` 保留 `PGOPTIONS` 与 UTC 时区，Gateway 集成使用临时 `kevinc.pem` / `kevinc.key` 和测试网络 upstream 配置；提交为 `24331b5`。nginx 升级提交为 `60e9a9b`。
+- 限制：本次只修补 nginx 容器镜像，不升级宿主机内核；nginx2root 文章同时描述了一个可串联的 Linux SCTP 内核本地提权问题，若宿主机内核仍受影响，应在单独维护窗口评估内核更新。本次未修改 nginx 路由、证书、HTTP/2 / HTTP/3 或 ACL 配置。
