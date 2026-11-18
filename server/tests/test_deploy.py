@@ -56,6 +56,13 @@ def test_compose_uses_transferred_images_and_managed_services():
     assert "443:443" not in COMPOSE
 
 
+def test_gateway_image_is_pinned_to_the_patched_nginx_release():
+    dockerfile = (ROOT / "gateway" / "Dockerfile").read_text()
+    assert dockerfile.count("FROM nginx:1.31.9-alpine") == 2
+    assert "nginx version: nginx/1.31.9" in dockerfile
+    assert "FROM nginx:1.31-alpine" not in dockerfile
+
+
 def test_gateway_config_matches_the_new_domain_and_certificates():
     nginx = (ROOT / "gateway" / "nginx.conf").read_text()
     assert "server_name devops.kevinc.ltd;" in nginx

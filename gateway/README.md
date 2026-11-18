@@ -19,7 +19,7 @@ CLI 使用独立 public client `devops-cli`，权限为 `api:read api:write`，�
 | 部署文件 | `compose.deploy.yaml`，与开发用 `compose.yaml` 分开 |
 | 后端镜像 | `devops.kevinc.ltd/core/devops:latest`，Python 3.14 Alpine + uv.lock |
 | Gateway 镜像 | `devops.kevinc.ltd/core/devops-gateway:latest` |
-| Gateway 基础镜像 | `nginx:1.31-alpine`（mainline，含 `--with-http_v3_module` 与 `--with-compat`），Brotli 模块按同版本源码编译 |
+| Gateway 基础镜像 | `nginx:1.31.9-alpine`（mainline，含 `--with-http_v3_module` 与 `--with-compat`，修复 nginx2root / CVE-2026-123007 等 1.31.8 及更早版本漏洞），Brotli 模块按同版本源码编译 |
 | 网络模式 | Gateway 使用 `network_mode: host`，直接绑定宿主机 TCP / UDP 443（IPv4 + IPv6）；server 与 registry 只发布到 `127.0.0.1` |
 | 客户端地址 | host 网络下 `$remote_addr` 就是真实客户端（含 IPv6），Nginx 仍写入 `X-Forwarded-For` / `X-Real-IP`，后端按配置顺序取第一个有效 IP |
 | 目标架构 | 只构建 `linux/amd64`；镜像用 `docker save` / `docker load` 传输到 x64 服务器，不经过 registry |
@@ -44,7 +44,7 @@ LFS 使用独立流式代理到 FastAPI，单对象最大 5 GiB，不经过 CGI�
 
 Nginx 同时监听 `443 ssl`（TCP）及 `443 quic reuseport`（UDP），响应带 `Alt-Svc: h3=":443"; ma=86400`。HTTP/1.1 / HTTP/2 保持可用；浏览器会按客户端和网络条件选择协议。启用 QUIC Retry，保持 TLS 0-RTT 关闭，避免登录、OAuth、Git 等写操作被 early data 重放。HTTP/3 沿用相同路由、证书和 ACL；代理 Host 在缺少普通 Host 头时取 `:authority` 对应的 `$host` / `$request_port`，保留显式端口，避免上游收到缺失 Host 的 HTTP/1.1 请求；日志只新增协议版本，不记录查询或凭据。
 
-基础镜像需 Nginx 1.29.3+，必须编译 `--with-http_v3_module`（Dockerfile 构建时检查），保留 Brotli。当前配置依据 [Nginx QUIC 指南](https://nginx.org/en/docs/quic.html) 与 [HTTP/3 模块](https://nginx.org/en/docs/http/ngx_http_v3_module.html)。Compose 必须同时发布 `443:443/tcp`、`443:443/udp`，宿主防火墙 / 云安全组也需分别放行。不要开启 API / FastCGI 的外网端口。
+基础镜像固定 Nginx 1.31.9+（当前 Dockerfile 校验精确版本），必须编译 `--with-http_v3_module`（Dockerfile 构建时检查），保留 Brotli。1.31.8 及更早版本受 nginx2root 的 HTTP/2 / HTTP/3 漏洞影响，不能继续使用。当前配置依据 [Nginx QUIC 指南](https://nginx.org/en/docs/quic.html) 与 [HTTP/3 模块](https://nginx.org/en/docs/http/ngx_http_v3_module.html)。Compose 必须同时发布 `443:443/tcp`、`443:443/udp`，宿主防火墙 / 云安全组也需分别放行。不要开启 API / FastCGI 的外网端口。
 
 实际握手验收使用 `make -C . http3-check`（仓库根目录）；可加 `HTTP3_ARGS="--ipv4"` 或 `HTTP3_ARGS="--ipv6"` 单独检查地址族，详情见 [HTTP/3 只读验收](../scripts/README.md#http3-只读验收)。`Alt-Svc`、`nginx -t` 或容器 healthy 单独都不能证明 UDP 链路正常。
 
