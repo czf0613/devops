@@ -8,6 +8,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import socket
 import ssl
 import subprocess
@@ -19,7 +20,7 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from deploy import REGISTRY_IMAGE, native_platform
+from deploy import DISTRIBUTION_TAG
 from deploy_website import assets_in_html, package
 from deploy_website import digest as file_digest
 from devops_server.config import get_connections
@@ -53,6 +54,11 @@ def run(*args, **kwargs):
         # Commands contain only paths/config names, never token values or passwords.
         raise RuntimeError(f"Command failed: {args[0:3]}\n{result.stderr}")
     return result.stdout.strip()
+
+
+def native_platform():
+    value = run("docker", "info", "--format", "{{.OSType}}/{{.Architecture}}")
+    return value.replace("/aarch64", "/arm64").replace("/x86_64", "/amd64")
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -196,6 +202,15 @@ def main():
                 "-out",
                 str(certs / "sc.pem"),
             )
+            shutil.copyfile(certs / "sc.pem", certs / "kevinc.pem")
+            shutil.copyfile(certs / "sc.key", certs / "kevinc.key")
+            gateway_config = temp / "gateway.conf"
+            gateway_config.write_text(
+                (devops / "gateway" / "nginx.conf")
+                .read_text()
+                .replace("server 127.0.0.1:8000;", "server server:8000;")
+                .replace("server 127.0.0.1:5000;", "server registry:5000;")
+            )
             environment = temp / "connections.env"
             values = {
                 "POSTGRES_HOST": "host.docker.internal",
@@ -264,7 +279,7 @@ def main():
                 f"{registry_data}:/var/lib/registry",
                 "-v",
                 f"{devops / 'registry/start.sh'}:/etc/distribution/start.sh:ro",
-                REGISTRY_IMAGE,
+                DISTRIBUTION_TAG,
                 "/etc/distribution/start.sh",
             )
             run(
@@ -380,6 +395,8 @@ def main():
                 f"{repos}:/mnt/git-repos",
                 "-v",
                 f"{website}:/usr/share/nginx/html:ro",
+                "-v",
+                f"{gateway_config}:/etc/nginx/conf.d/devops.conf:ro",
                 GATEWAY,
             )
             run(
@@ -451,7 +468,18 @@ def main():
                     pass
                 time.sleep(0.5)
             else:
-                raise RuntimeError("Gateway/backend did not become ready")
+                details = []
+                for name in (gateway, backend):
+                    result = subprocess.run(
+                        ["docker", "logs", "--tail", "80", name],
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    )
+                    details.append(f"{name}:\n{result.stdout}{result.stderr}")
+                raise RuntimeError(
+                    "Gateway/backend did not become ready\n" + "\n".join(details)
+                )
             # Compose --wait depends on the image health commands, not only HTTP readiness.
             for container in (backend, gateway):
                 health = json.loads(
